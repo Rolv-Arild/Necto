@@ -40,9 +40,9 @@ python -m pip install -r requirements.txt -f https://download.pytorch.org/whl/to
 
 if !errorlevel! neq 0 pause & exit /b !errorlevel!
 
-set /p helper_name="Enter name: "
-set /p ip="Enter IP address: "
-set /p ip="Enter password: "
+set /p helper_name=Enter name: 
+set /p ip=Enter IP address: 
+set /p password=Enter password: 
 
 echo.
 echo #########################
@@ -50,6 +50,6 @@ echo ### Launching Worker! ###
 echo #########################
 echo.
 
-py worker.py !helper_name! !ip!
+py worker.py !helper_name! !ip! !password!
 
 pause
