@@ -1,5 +1,5 @@
 @echo off
-REM sets inside of ifs annoy windows
+REM Using sets inside of ifs annoys windows, this Setlocal fixes that
 Setlocal EnableDelayedExpansion
 
 if exist !APPDATA!\bakkesmod\ (
@@ -28,7 +28,6 @@ if exist !APPDATA!\bakkesmod\ (
     goto :done
 
     :no_install
-    echo nope
     goto :done    
     
     :done
