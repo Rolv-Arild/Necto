@@ -7,12 +7,11 @@ To download and help compute Necto the community bot, first make sure you have d
 
 ## To start computing
 
-1) clone this repo
-
-2) Make a symlink in the Necto training folder in an cmd with Admin:
-
-mklink /D C:\<DOWNLOAD_PATH>\Necto\training\training C:\<DOWNLOAD_PATH>\Necto\training
-
-3) Run runDistributedWorker.bat 
+1. clone repo
+2. start cmd as admin
+3. create symlink to repo\training\training repo\training (mklink /d path\to\repo\training\training path\to\repo\training)
+4. cd repo\training
+5. Run runDistributedWorker.bat
+6. enter your name + server ip + server password
 
 when asked for the IP and password, dm Soren and he'll fill you in. 
