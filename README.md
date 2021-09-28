@@ -1,21 +1,17 @@
-# RLGymExampleBot
-RLGym example bot for the RLBot framework, based on the official RLBotPythonExample
+# Community Bot Beta Test
 
-## How to use this 
+To download and help compute Necto the community bot, first make sure you have downloaded:
+-bakkesmod
+-git
+-python 3.8
 
-This bot runs the Actor class in `src/actor.py`, you're expected to replace that with the output of your model
+## To start computing
 
-By default we use DefaultObs from RLGym, AdvancedObs is also available in this project. 
+1) clone this repo
 
-You can also provide your own custom ObservationBuilder by copying it over and replacing the `rlgym` imports with `rlgym_compat` (check `src/obs/` for some examples)
+2) Make a symlink in the Necto training folder:
+mklink /D C:\<DOWNLOAD_PATH>\Necto\training\training C:\<DOWNLOAD_PATH>\Necto\training
 
-## Changing the bot
+3) Run runDistributedWorker.bat 
 
-- Bot behavior is controlled by `src/bot.py`
-- Bot appearance is controlled by `src/appearance.cfg`
-
-See https://github.com/RLBot/RLBotPythonExample/wiki for documentation and tutorials.
-
-## Running a match
-
-You can start a match by running `run.py`, the match config for it is in `rlbot.cfg`
+when asked for the IP and password, dm Soren and he'll fill you in. 
