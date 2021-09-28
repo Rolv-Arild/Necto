@@ -2,8 +2,6 @@ wheel==0.36.2
 redis==3.5.3
 numpy==1.20.3
 torch==1.9.0+cu102
-torchvision==0.10.0+cu102
-torchaudio===0.9.0
 plotly==5.3.1
 wandb==0.12.1
 matplotlib==3.3.3

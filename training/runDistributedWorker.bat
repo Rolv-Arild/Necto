@@ -2,6 +2,10 @@
 REM Using sets inside of ifs annoys windows, this Setlocal fixes that
 Setlocal EnableDelayedExpansion
 
+WHERE git
+if !errorlevel! neq 0 echo git required, download here: https://git-scm.com/download/win
+if !errorlevel! neq 0 pause & exit
+
 if exist !APPDATA!\bakkesmod\ (
     echo Bakkesmod located at !APPDATA!\bakkesmod\ 
     goto :done
@@ -38,9 +42,6 @@ CALL  !LocalAppData!\necto\venv\Scripts\activate.bat
 
 python -m pip install git+https://github.com/Rolv-Arild/rocket-learn.git
 python -m pip install -r requirements.txt -f https://download.pytorch.org/whl/torch_stable.html
-
-python --version
-py --version
 
 if !errorlevel! neq 0 pause & exit /b !errorlevel!
 
