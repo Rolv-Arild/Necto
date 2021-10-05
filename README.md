@@ -1,21 +1,32 @@
-# RLGymExampleBot
-RLGym example bot for the RLBot framework, based on the official RLBotPythonExample
+# Community Bot Beta Test
 
-## How to use this 
+To download and help compute Necto the community bot, first make sure you have downloaded:
+1. Rocket League
+2. bakkesmod
+3. python >=3.8
+4. git
 
-This bot runs the Actor class in `src/actor.py`, you're expected to replace that with the output of your model
 
-By default we use DefaultObs from RLGym, AdvancedObs is also available in this project. 
+## To start computing
 
-You can also provide your own custom ObservationBuilder by copying it over and replacing the `rlgym` imports with `rlgym_compat` (check `src/obs/` for some examples)
+1. clone repo
+2. start cmd as admin
+3. create symlink to repo\training\training repo\training (mklink /D path\to\repo\training\training path\to\repo\training)
+4. close cmd
+6. open repo\training in windows explorer or non-admin cmd
+7. Run runDistributedWorker.bat
+8. enter your name + server ip + server password
 
-## Changing the bot
+when asked for the IP and password, dm Soren and he'll fill you in. 
 
-- Bot behavior is controlled by `src/bot.py`
-- Bot appearance is controlled by `src/appearance.cfg`
 
-See https://github.com/RLBot/RLBotPythonExample/wiki for documentation and tutorials.
+## What is this?
 
-## Running a match
+This is Necto, the RLGym community bot. It's a bot that's learning to play 1's, 2's, and 3's thanks to RLGym.
+Rocket League is a hard game though so we're all working together to give it the experience it needs.
 
-You can start a match by running `run.py`, the match config for it is in `rlbot.cfg`
+
+## Can I watch it learn?
+
+Soon! We're planning to set up a live stream and data graphs so you can track its learning.
+
