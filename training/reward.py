@@ -5,7 +5,19 @@ from rlgym.utils.gamestates import GameState, PlayerData
 
 
 class NectoRewardFunction(RewardFunction):
-    def __init__(self, team_spirit=0.3, goal_w=10, shot_w=5, save_w=5, demo_w=5, boost_w=0.5):
+    def __init__(
+            self,
+            team_spirit=0.3,
+            goal_w=10,
+            shot_w=5,
+            save_w=5,
+            demo_w=5,
+            boost_w=0.5,
+            touch_height_w=1,
+            touch_accel_w=1,
+            car_accel_w=0.05,
+            cb_accel_w=0.05
+    ):
         self.team_spirit = team_spirit
         self.last_state = None
         self.current_state = None
@@ -18,10 +30,10 @@ class NectoRewardFunction(RewardFunction):
         self.save_w = save_w
         self.demo_w = demo_w
         self.boost_w = boost_w
-        self.touch_height_w = 1
-        self.touch_accel_w = 1
-        self.car_accel_w = 0.1
-        self.cb_accel_w = 0.1
+        self.touch_height_w = touch_height_w
+        self.touch_accel_w = touch_accel_w
+        self.car_accel_w = car_accel_w
+        self.cb_accel_w = cb_accel_w
 
     def reset(self, initial_state: GameState):
         self.last_state = None
