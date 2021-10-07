@@ -70,10 +70,16 @@ class NectoRewardFunction(RewardFunction):
                 rew += (self.touch_height_w * state.ball.position[2] / CEILING_Z +
                         self.touch_accel_w * np.linalg.norm(curr_vel - last_vel) / BALL_MAX_SPEED)
 
-            diff_vel = (new_p.car_data.linear_velocity - old_p.car_data.linear_velocity) / CAR_MAX_SPEED
-            diff_pos = self.current_state.ball.position - new_p.car_data.position
-            rew += (self.car_accel_w * np.linalg.norm(diff_vel) +
-                    self.cb_accel_w * np.dot(diff_vel, diff_pos / np.linalg.norm(diff_pos)))
+            diff_abs_vel = (np.linalg.norm(new_p.car_data.linear_velocity)
+                            - np.linalg.norm(old_p.car_data.linear_velocity))
+            diff_vel = (new_p.car_data.linear_velocity
+                        - old_p.car_data.linear_velocity)
+            ball_dir = self.current_state.ball.position - new_p.car_data.position
+            ball_dir = ball_dir / np.linalg.norm(ball_dir)
+            accel_ball = np.dot(diff_vel, ball_dir)
+
+            rew += (self.car_accel_w * diff_abs_vel / CAR_MAX_SPEED +
+                    self.cb_accel_w * accel_ball / CAR_MAX_SPEED)
 
             rewards[i] = rew
             if new_p.team_num == BLUE_TEAM:
