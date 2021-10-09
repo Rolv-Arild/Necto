@@ -3,21 +3,21 @@ import sys
 import torch
 from redis import Redis
 from rlgym.envs import Match
+from rlgym.utils.reward_functions.common_rewards import ConstantReward
 
 from rocket_learn.rollout_generator.redis_rollout_generator import RedisRolloutWorker
 from training.learner import WORKER_COUNTER
 from training.obs import NectoObsBuilder
-from training.reward import NectoRewardFunction
 from training.state import NectoStateSetter
 from training.terminal import NectoTerminalCondition
 
 
 def get_match(r):
-    order = (1, 2, 3, 1, 1, 2, 1, 1, 3, 2, 1)  # Close as possible number of agents
-    # order = (1, 1, 2, 1, 1, 2, 3, 1, 1, 2, 3)  # Close as possible with 1s >= 2s >= 3s
+    # order = (1, 2, 3, 1, 1, 2, 1, 1, 3, 2, 1)  # Close as possible number of agents
+    order = (1, 1, 2, 1, 1, 2, 3, 1, 1, 2, 3)  # Close as possible with 1s >= 2s >= 3s
     team_size = order[r % len(order)]
     return Match(
-        reward_function=NectoRewardFunction(),
+        reward_function=ConstantReward(0),
         terminal_conditions=NectoTerminalCondition(),
         obs_builder=NectoObsBuilder(),
         state_setter=NectoStateSetter(),

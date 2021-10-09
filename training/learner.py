@@ -7,34 +7,49 @@ from redis import Redis
 from rocket_learn.ppo import PPO
 from rocket_learn.rollout_generator.redis_rollout_generator import RedisRolloutGenerator
 from training.agent import get_agent
+from training.obs import NectoObsBuilder
+from training.reward import NectoRewardFunction
 
 WORKER_COUNTER = "worker-counter"
+
+config = dict(
+    actor_lr=1e-4,
+    critic_lr=1e-4,
+    n_steps=1_000_000,
+    batch_size=40_000,
+    minibatch_size=10_000,
+    epochs=25,
+    gamma=0.995,
+    iterations_per_save=10
+)
 
 if __name__ == "__main__":
     run_id = None
 
     _, ip, password = sys.argv
     wandb.login(key=os.environ["WANDB_KEY"])
-    logger = wandb.init(project="rocket-learn", entity="rolv-arild", id=run_id)
+    logger = wandb.init(project="rocket-learn", entity="rolv-arild", id=run_id, config=config)
 
     redis = Redis(host=ip, password=password)
     redis.delete(WORKER_COUNTER)  # Reset to 0
-    rollout_gen = RedisRolloutGenerator(redis, save_every=10, logger=logger, clear=run_id is None)
+    rollout_gen = RedisRolloutGenerator(redis,
+                                        lambda: NectoObsBuilder(), lambda: NectoRewardFunction(),
+                                        save_every=10, logger=logger, clear=run_id is None)
 
     agent = get_agent(actor_lr=1e-4, critic_lr=1e-4)
 
     alg = PPO(
         rollout_gen,
         agent,
-        n_steps=1_000_000,
-        batch_size=40_000,
-        minibatch_size=10_000,
-        epochs=25,
-        gamma=0.995,
+        n_steps=logger.config.n_steps,
+        batch_size=logger.config.batch_size,
+        minibatch_size=logger.config.minibatch_size,
+        epochs=logger.config.epochs,
+        gamma=logger.config.gamma,
         logger=logger,
     )
 
-    alg.load("ppos/rocket-learn_1633471635.9134436/rocket-learn_150/checkpoint.pt")
+    # alg.load("ppos/rocket-learn_1633471635.9134436/rocket-learn_150/checkpoint.pt")
 
     log_dir = "E:\\log_directory\\"
     repo_dir = "E:\\repo_directory\\"

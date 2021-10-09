@@ -100,4 +100,4 @@ class NectoRewardFunction(RewardFunction):
         self._maybe_update_rewards(state)
         rew = self.rewards[self.n]
         self.n += 1
-        return rew
+        return rew / 2.5  # Approximate std at init is 2.5, helps the net a little
