@@ -32,8 +32,17 @@ if __name__ == "__main__":
 
     redis = Redis(host=ip, password=password)
     redis.delete(WORKER_COUNTER)  # Reset to 0
-    rollout_gen = RedisRolloutGenerator(redis,
-                                        lambda: NectoObsBuilder(), lambda: NectoRewardFunction(),
+
+
+    def obs():
+        return NectoObsBuilder()
+
+
+    def rew():
+        return NectoRewardFunction()
+
+
+    rollout_gen = RedisRolloutGenerator(redis, obs, rew,
                                         save_every=10, logger=logger, clear=run_id is None)
 
     agent = get_agent(actor_lr=1e-4, critic_lr=1e-4)
