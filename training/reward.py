@@ -51,9 +51,13 @@ class NectoRewardFunction(RewardFunction):
         orange_mask = np.zeros_like(rewards, dtype=bool)
         i = 0
 
+        d_blue = state.blue_score - self.last_state.blue_score
+        d_orange = state.orange_score - self.last_state.orange_score
+
         for old_p, new_p in zip(self.last_state.players, self.current_state.players):
             assert old_p.car_id == new_p.car_id
-            rew = (self.goal_w * (new_p.match_goals - old_p.match_goals) +
+            # d_goal = new_p.match_goals - old_p.match_goals
+            rew = (  # self.goal_w * d_goal +
                    self.shot_w * (new_p.match_shots - old_p.match_shots) +
                    self.save_w * (new_p.match_saves - old_p.match_saves) +
                    self.demo_w * (new_p.match_demolishes - old_p.match_demolishes) +
@@ -84,9 +88,18 @@ class NectoRewardFunction(RewardFunction):
             rewards[i] = rew
             if new_p.team_num == BLUE_TEAM:
                 blue_mask[i] = True
+                # d_blue -= d_goal
             else:
                 orange_mask[i] = True
+                # d_orange -= d_goal
             i += 1
+
+        # Handle goals with no scorer for critic consistency,
+        # random state could send ball straight into goal
+        if d_blue > 0:
+            rewards[blue_mask] = self.goal_w / blue_mask.sum()
+        if d_orange > 0:
+            rewards[orange_mask] = self.goal_w / orange_mask.sum()
 
         blue_rewards = rewards[blue_mask]
         orange_rewards = rewards[orange_mask]

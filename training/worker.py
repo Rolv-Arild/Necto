@@ -17,7 +17,7 @@ def get_match(r):
     order = (1, 1, 2, 1, 1, 2, 3, 1, 1, 2, 3)  # Close as possible with 1s >= 2s >= 3s
     team_size = order[r % len(order)]
     return Match(
-        reward_function=ConstantReward(0),
+        reward_function=ConstantReward(),
         terminal_conditions=NectoTerminalCondition(),
         obs_builder=NectoObsBuilder(),
         state_setter=NectoStateSetter(),

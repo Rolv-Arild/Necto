@@ -110,6 +110,8 @@ class NectoObsBuilder(ObsBuilder):
             qkv[0, :, (1, 2)] = qkv[0, :, (2, 1)]  # Swap blue/orange
             qkv *= self._invert  # Negate x and y values
 
+        # TODO left-right normalization (always pick one side)
+
         q = qkv[0, main_n, :]
         q = np.expand_dims(np.concatenate((q, previous_action), axis=0), axis=(0, 1))
         # kv = np.delete(qkv, main_n, axis=0)  # Delete main? Watch masking

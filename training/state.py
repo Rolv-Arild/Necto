@@ -37,6 +37,7 @@ class BetterRandom(StateSetter):  # Random state with some triangular distributi
 
             ang_vel = rand_vec3(np.random.triangular(0, 0, CAR_MAX_ANG_VEL))
             car.set_ang_vel(*ang_vel)
+            car.boost = np.random.uniform(0, 1)
 
         state_wrapper.ball.set_pos(
             x=np.random.uniform(-LIM_X, LIM_X),
@@ -58,7 +59,7 @@ class NectoStateSetter(StateSetter):
         self.random = BetterRandom()
 
     def reset(self, state_wrapper: StateWrapper):
-        if np.random.random() < 0.5:
+        if np.random.random() < 0.9:
             self.random.reset(state_wrapper)
         else:
             self.default.reset(state_wrapper)
