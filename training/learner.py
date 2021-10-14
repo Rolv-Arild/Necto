@@ -58,7 +58,8 @@ if __name__ == "__main__":
         logger=logger,
     )
 
-    # alg.load("ppos/rocket-learn_1633471635.9134436/rocket-learn_150/checkpoint.pt")
+    if run_id is not None:
+        alg.load("ppos/rocket-learn_1634138943.7612503/rocket-learn_60/checkpoint.pt")
 
     log_dir = "E:\\log_directory\\"
     repo_dir = "E:\\repo_directory\\"

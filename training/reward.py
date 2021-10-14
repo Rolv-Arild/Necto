@@ -97,9 +97,9 @@ class NectoRewardFunction(RewardFunction):
         # Handle goals with no scorer for critic consistency,
         # random state could send ball straight into goal
         if d_blue > 0:
-            rewards[blue_mask] = self.goal_w / blue_mask.sum()
+            rewards[blue_mask] = d_blue * self.goal_w / blue_mask.sum()
         if d_orange > 0:
-            rewards[orange_mask] = self.goal_w / orange_mask.sum()
+            rewards[orange_mask] = d_orange * self.goal_w / orange_mask.sum()
 
         blue_rewards = rewards[blue_mask]
         orange_rewards = rewards[orange_mask]
