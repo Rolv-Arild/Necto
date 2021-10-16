@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 from rlgym.utils import StateSetter
 from rlgym.utils.common_values import CAR_MAX_SPEED, SIDE_WALL_X, BACK_WALL_Y, CEILING_Z, BALL_RADIUS, CAR_MAX_ANG_VEL, \
@@ -45,7 +47,9 @@ class BetterRandom(StateSetter):  # Random state with some triangular distributi
             z=np.random.triangular(BALL_RADIUS, BALL_RADIUS, LIM_Z),
         )
 
-        vel = rand_vec3(np.random.triangular(0, 0, BALL_MAX_SPEED))
+        # 99% chance of below car max speed
+        ball_speed = np.random.exponential(-CAR_MAX_SPEED / np.log(1 - 0.99))
+        vel = rand_vec3(min(ball_speed, BALL_MAX_SPEED))
         state_wrapper.ball.set_lin_vel(*vel)
 
         ang_vel = rand_vec3(np.random.triangular(0, 0, CAR_MAX_ANG_VEL + 0.5))
