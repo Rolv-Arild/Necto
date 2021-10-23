@@ -21,26 +21,6 @@ class BetterRandom(StateSetter):  # Random state with some triangular distributi
         super().__init__()
 
     def reset(self, state_wrapper: StateWrapper):
-        for car in state_wrapper.cars:
-            car.set_pos(
-                x=np.random.uniform(-LIM_X, LIM_X),
-                y=np.random.uniform(-LIM_Y, LIM_Y),
-                z=np.random.triangular(BALL_RADIUS, BALL_RADIUS, LIM_Z),
-            )
-
-            vel = rand_vec3(np.random.triangular(0, 0, CAR_MAX_SPEED))
-            car.set_lin_vel(*vel)
-
-            car.set_rot(
-                pitch=np.random.triangular(-PITCH_LIM, 0, PITCH_LIM),
-                yaw=np.random.uniform(-YAW_LIM, YAW_LIM),
-                roll=np.random.triangular(-ROLL_LIM, 0, ROLL_LIM),
-            )
-
-            ang_vel = rand_vec3(np.random.triangular(0, 0, CAR_MAX_ANG_VEL))
-            car.set_ang_vel(*ang_vel)
-            car.boost = np.random.uniform(0, 1)
-
         state_wrapper.ball.set_pos(
             x=np.random.uniform(-LIM_X, LIM_X),
             y=np.random.uniform(-LIM_Y, LIM_Y),
@@ -55,15 +35,53 @@ class BetterRandom(StateSetter):  # Random state with some triangular distributi
         ang_vel = rand_vec3(np.random.triangular(0, 0, CAR_MAX_ANG_VEL + 0.5))
         state_wrapper.ball.set_ang_vel(*ang_vel)
 
+        for car in state_wrapper.cars:
+            for _ in range(10):  # 10 retries
+                ball_dist = np.random.exponential(2300)
+                ball_car = rand_vec3(ball_dist)
+                car_pos = state_wrapper.ball.position + ball_car
+                if abs(car_pos[0]) < LIM_X \
+                        and abs(car_pos[1]) < LIM_Y \
+                        and 0 < car_pos[2] < LIM_Z:
+                    car.set_pos(*car_pos)
+                    break
+            else:  # Fallback on fully random
+                car.set_pos(
+                    x=np.random.uniform(-LIM_X, LIM_X),
+                    y=np.random.uniform(-LIM_Y, LIM_Y),
+                    z=np.random.triangular(BALL_RADIUS, BALL_RADIUS, LIM_Z),
+                )
+
+            vel = rand_vec3(np.random.triangular(0, 0, CAR_MAX_SPEED))
+            car.set_lin_vel(*vel)
+
+            car.set_rot(
+                pitch=np.random.triangular(-PITCH_LIM, 0, PITCH_LIM),
+                yaw=np.random.uniform(-YAW_LIM, YAW_LIM),
+                roll=np.random.triangular(-ROLL_LIM, 0, ROLL_LIM),
+            )
+
+            ang_vel = rand_vec3(np.random.triangular(0, 0, CAR_MAX_ANG_VEL))
+            car.set_ang_vel(*ang_vel)
+            car.boost = np.random.uniform(0, 1)
+
+
+# class KickoffLike(StateSetter): TODO
+#     def reset(self, state_wrapper: StateWrapper):
+#         state_wrapper.ball.set_pos(
+#             x=np.random.uniform(-LIM_X, LIM_X)
+#         )
+
 
 class NectoStateSetter(StateSetter):
     def __init__(self):
         super().__init__()
-        self.default = DefaultState()
+        # self.default = DefaultState()
         self.random = BetterRandom()
 
     def reset(self, state_wrapper: StateWrapper):
-        if np.random.random() < 0.9:
-            self.random.reset(state_wrapper)
-        else:
-            self.default.reset(state_wrapper)
+        self.random.reset(state_wrapper)
+        # if np.random.random() < 0.9:
+        #     self.random.reset(state_wrapper)
+        # else:
+        #     self.default.reset(state_wrapper)

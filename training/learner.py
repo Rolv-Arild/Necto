@@ -3,9 +3,13 @@ import sys
 
 import wandb
 from redis import Redis
+from rlgym.utils.reward_functions import CombinedReward
+from rlgym.utils.reward_functions.common_rewards import LiuDistancePlayerToBallReward, EventReward
+from rlgym_tools.extra_rewards.diff_reward import DiffReward
 
 from rocket_learn.ppo import PPO
 from rocket_learn.rollout_generator.redis_rollout_generator import RedisRolloutGenerator
+from rocket_learn.utils.util import ExpandAdvancedObs
 from training.agent import get_agent
 from training.obs import NectoObsBuilder
 from training.reward import NectoRewardFunction
@@ -15,11 +19,11 @@ WORKER_COUNTER = "worker-counter"
 config = dict(
     actor_lr=1e-4,
     critic_lr=1e-4,
-    n_steps=1_000_000,
-    batch_size=40_000,
-    minibatch_size=10_000,
+    n_steps=1_00_000,
+    batch_size=4_000,
+    minibatch_size=1_000,
     epochs=25,
-    gamma=0.995,
+    gamma=0.99,
     iterations_per_save=10
 )
 
@@ -35,11 +39,15 @@ if __name__ == "__main__":
 
 
     def obs():
-        return NectoObsBuilder()
+        return ExpandAdvancedObs()
 
 
     def rew():
-        return NectoRewardFunction()
+        return CombinedReward.from_zipped(
+            (DiffReward(LiuDistancePlayerToBallReward()), 1),
+            (EventReward(touch=10)),
+        )
+        # return NectoRewardFunction()
 
 
     rollout_gen = RedisRolloutGenerator(redis, obs, rew,
@@ -58,8 +66,8 @@ if __name__ == "__main__":
         logger=logger,
     )
 
-    if run_id is not None:
-        alg.load("ppos/rocket-learn_1634138943.7612503/rocket-learn_60/checkpoint.pt")
+    # if run_id is not None:
+    #     alg.load("ppos/rocket-learn_1634138943.7612503/rocket-learn_60/checkpoint.pt")
 
     log_dir = "E:\\log_directory\\"
     repo_dir = "E:\\repo_directory\\"

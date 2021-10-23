@@ -1,7 +1,7 @@
 import torch
 from earl_pytorch import EARLPerceiver, ControlsPredictorDiscrete
 from torch import nn
-from torch.nn import Linear
+from torch.nn import Linear, Sequential
 
 from rocket_learn.agent.actor_critic_agent import ActorCriticAgent
 from rocket_learn.agent.discrete_policy import DiscretePolicy
@@ -22,13 +22,18 @@ class Necto(nn.Module):  # Wraps earl + an output and takes only a single input
 
 
 def get_critic():
-    return Necto(EARLPerceiver(128, 1, 4, 1, query_features=32, key_value_features=24),
-                 Linear(128, 1))
+    return Sequential(Linear(107, 128), Linear(128, 128), Linear(128, 64),
+                      Linear(64, 32), Linear(32, 1))
+    # return Necto(EARLPerceiver(128, 1, 4, 1, query_features=32, key_value_features=24),
+    #              Linear(128, 1))
 
 
 def get_actor():
-    return DiscretePolicy(Necto(EARLPerceiver(256, 1, 4, 1, query_features=32, key_value_features=24),
-                                ControlsPredictorDiscrete(256)))
+    return DiscretePolicy(Sequential(Linear(107, 128), Linear(128, 128), Linear(128, 64),
+                                     Linear(64, 32), ControlsPredictorDiscrete(32)))
+
+    # return DiscretePolicy(Necto(EARLPerceiver(256, 1, 4, 1, query_features=32, key_value_features=24),
+    #                             ControlsPredictorDiscrete(256)))
 
 
 def get_agent(actor_lr, critic_lr=None):
