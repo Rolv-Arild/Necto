@@ -4,8 +4,10 @@ import sys
 import wandb
 from redis import Redis
 from rlgym.utils.reward_functions import CombinedReward
-from rlgym.utils.reward_functions.common_rewards import LiuDistancePlayerToBallReward, EventReward
+from rlgym.utils.reward_functions.common_rewards import LiuDistancePlayerToBallReward, EventReward, \
+    VelocityPlayerToBallReward
 from rlgym_tools.extra_rewards.diff_reward import DiffReward
+from rlgym_tools.extra_rewards.multiply_rewards import MultiplyRewards
 
 from rocket_learn.ppo import PPO
 from rocket_learn.rollout_generator.redis_rollout_generator import RedisRolloutGenerator
@@ -17,15 +19,16 @@ from training.reward import NectoRewardFunction
 WORKER_COUNTER = "worker-counter"
 
 config = dict(
-    actor_lr=1e-4,
-    critic_lr=1e-4,
-    n_steps=1_00_000,
-    batch_size=4_000,
-    minibatch_size=1_000,
-    epochs=25,
+    actor_lr=3e-5,
+    critic_lr=3e-5,
+    n_steps=100_000,
+    batch_size=10_000,
+    minibatch_size=10_000,
+    epochs=30,
     gamma=0.99,
-    iterations_per_save=10
+    iterations_per_save=100
 )
+
 
 if __name__ == "__main__":
     run_id = None
@@ -44,16 +47,17 @@ if __name__ == "__main__":
 
     def rew():
         return CombinedReward.from_zipped(
-            (DiffReward(LiuDistancePlayerToBallReward()), 1),
+            DiffReward(VelocityPlayerToBallReward()),
             (EventReward(touch=10)),
         )
         # return NectoRewardFunction()
 
 
     rollout_gen = RedisRolloutGenerator(redis, obs, rew,
-                                        save_every=10, logger=logger, clear=run_id is None)
+                                        save_every=logger.config.iterations_per_save,
+                                        logger=logger, clear=run_id is None)
 
-    agent = get_agent(actor_lr=1e-4, critic_lr=1e-4)
+    agent = get_agent(actor_lr=logger.config.actor_lr, critic_lr=logger.config.critic_lr)
 
     alg = PPO(
         rollout_gen,
@@ -72,4 +76,4 @@ if __name__ == "__main__":
     log_dir = "E:\\log_directory\\"
     repo_dir = "E:\\repo_directory\\"
 
-    alg.run(iterations_per_save=10, save_dir="ppos")
+    alg.run(iterations_per_save=logger.config.iterations_per_save, save_dir="ppos")
