@@ -4,17 +4,14 @@ import sys
 import wandb
 from redis import Redis
 from rlgym.utils.reward_functions import CombinedReward
-from rlgym.utils.reward_functions.common_rewards import LiuDistancePlayerToBallReward, EventReward, \
+from rlgym.utils.reward_functions.common_rewards import EventReward, \
     VelocityPlayerToBallReward
 from rlgym_tools.extra_rewards.diff_reward import DiffReward
-from rlgym_tools.extra_rewards.multiply_rewards import MultiplyRewards
 
 from rocket_learn.ppo import PPO
 from rocket_learn.rollout_generator.redis_rollout_generator import RedisRolloutGenerator
-from rocket_learn.utils.util import ExpandAdvancedObs
 from training.agent import get_agent
 from training.obs import NectoObsBuilder
-from training.reward import NectoRewardFunction
 
 WORKER_COUNTER = "worker-counter"
 
@@ -42,7 +39,7 @@ if __name__ == "__main__":
 
 
     def obs():
-        return ExpandAdvancedObs()
+        return NectoObsBuilder()
 
 
     def rew():

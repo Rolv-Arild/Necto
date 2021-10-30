@@ -22,7 +22,7 @@ def get_match(r):
     return Match(
         reward_function=ConstantReward(),
         terminal_conditions=NectoTerminalCondition(),
-        obs_builder=ExpandAdvancedObs(),  # NectoObsBuilder(),
+        obs_builder=NectoObsBuilder(),
         state_setter=NectoStateSetter(),
         self_play=True,
         team_size=team_size,
