@@ -1,23 +1,22 @@
 import os
 import sys
 
+import torch
 import wandb
 from redis import Redis
-from rlgym.utils.reward_functions import CombinedReward
-from rlgym.utils.reward_functions.common_rewards import EventReward, \
-    VelocityPlayerToBallReward
-from rlgym_tools.extra_rewards.diff_reward import DiffReward
 
 from rocket_learn.ppo import PPO
 from rocket_learn.rollout_generator.redis_rollout_generator import RedisRolloutGenerator
 from training.agent import get_agent
 from training.obs import NectoObsBuilder
+from training.reward import NectoRewardFunction
 
 WORKER_COUNTER = "worker-counter"
 
 config = dict(
-    actor_lr=3e-5,
-    critic_lr=3e-5,
+    seed=123,
+    actor_lr=3e-4,
+    critic_lr=3e-4,
     n_steps=100_000,
     batch_size=10_000,
     minibatch_size=10_000,
@@ -33,6 +32,7 @@ if __name__ == "__main__":
     _, ip, password = sys.argv
     wandb.login(key=os.environ["WANDB_KEY"])
     logger = wandb.init(project="rocket-learn", entity="rolv-arild", id=run_id, config=config)
+    torch.manual_seed(logger.config.seed)
 
     redis = Redis(host=ip, password=password)
     redis.delete(WORKER_COUNTER)  # Reset to 0
@@ -43,11 +43,11 @@ if __name__ == "__main__":
 
 
     def rew():
-        return CombinedReward.from_zipped(
-            DiffReward(VelocityPlayerToBallReward()),
-            (EventReward(touch=10)),
-        )
-        # return NectoRewardFunction()
+        # return CombinedReward.from_zipped(
+        #     DiffReward(VelocityPlayerToBallReward()),
+        #     (EventReward(touch=10)),
+        # )
+        return NectoRewardFunction(goal_w=0, shot_w=0, save_w=0, demo_w=0, boost_w=0)
 
 
     rollout_gen = RedisRolloutGenerator(redis, obs, rew,
