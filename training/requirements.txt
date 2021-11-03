@@ -9,7 +9,7 @@ tqdm==4.56.0
 trueskill==0.4.5
 msgpack==1.0.2
 msgpack_numpy==0.4.7.1
-EARL-pytorch==0.3.4
+EARL-pytorch==0.4.3
 pillow==8.2.0
 gym==0.18.3
 rlgym==1.0.0
