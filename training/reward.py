@@ -13,7 +13,7 @@ class NectoRewardFunction(RewardFunction):
             save_w=5,
             demo_w=5,
             boost_w=0.5,
-            touch_height_w=1,
+            touch_height_w=0.5,
             touch_accel_w=1,
             car_accel_w=0.05,
             cb_accel_w=0.05
