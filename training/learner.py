@@ -43,6 +43,7 @@ if __name__ == "__main__":
 
 
     def rew():
+        return necto_combined_reward()
         # return CombinedReward.from_zipped(
         #     DiffReward(VelocityPlayerToBallReward()),
         #     (EventReward(touch=10)),

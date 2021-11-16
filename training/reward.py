@@ -3,6 +3,15 @@ from rlgym.utils import RewardFunction
 from rlgym.utils.common_values import CEILING_Z, BALL_MAX_SPEED, CAR_MAX_SPEED, BLUE_TEAM
 from rlgym.utils.gamestates import GameState, PlayerData
 
+from rlgym.utils.reward_functions.common_rewards.ball_goal_rewards import VelocityBallToGoalReward
+from rlgym.utils.reward_functions.common_rewards.player_ball_rewards import TouchBallReward
+
+necto_combined_reward = CombinedReward.from_zipped(
+         VelocityBallToGoalReward(),
+         TouchBallReward()
+         #(EventReward(goal=10)),
+    )
+
 
 class NectoRewardFunction(RewardFunction):
     def __init__(

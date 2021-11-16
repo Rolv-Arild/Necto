@@ -19,7 +19,7 @@ def get_match(r):
     # order = (1,)
     team_size = order[r % len(order)]
     return Match(
-        reward_function=NectoRewardFunction(),
+        reward_function=necto_combined_reward(),#NectoRewardFunction(),
         terminal_conditions=NectoTerminalCondition(),
         obs_builder=NectoObsBuilder(),
         state_setter=NectoStateSetter(),
