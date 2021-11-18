@@ -3,7 +3,6 @@ import sys
 import torch
 from redis import Redis
 from rlgym.envs import Match
-from rlgym.utils.reward_functions.common_rewards import ConstantReward
 
 from rocket_learn.rollout_generator.redis_rollout_generator import RedisRolloutWorker
 from training.learner import WORKER_COUNTER
@@ -15,11 +14,17 @@ from training.terminal import NectoTerminalCondition
 
 def get_match(r):
     # order = (1, 2, 3, 1, 1, 2, 1, 1, 3, 2, 1)  # Close as possible number of agents
-    order = (1, 1, 2, 1, 1, 2, 3, 1, 1, 2, 3)  # Close as possible with 1s >= 2s >= 3s
-    # order = (1,)
+    # order = (1, 1, 2, 1, 1, 2, 3, 1, 1, 2, 3)  # Close as possible with 1s >= 2s >= 3s
+    order = (1,)
     team_size = order[r % len(order)]
     return Match(
-        reward_function=NectoRewardFunction(),
+        # reward_function=CombinedReward.from_zipped(
+        #     (DiffReward(LiuDistancePlayerToBallReward()), 0.05),
+        #     (DiffReward(LiuDistanceBallToGoalReward()), 10),
+        #     (EventReward(touch=0.05, goal=10)),
+        # ),
+        reward_function=NectoRewardFunction(goal_w=0, shot_w=0, save_w=0, demo_w=0, boost_w=0),
+        # reward_function=NectoRewardFunction(),
         terminal_conditions=NectoTerminalCondition(),
         obs_builder=NectoObsBuilder(),
         state_setter=NectoStateSetter(),

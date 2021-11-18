@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 from earl_pytorch import EARLPerceiver, ControlsPredictorDiscrete
 from torch import nn
@@ -41,7 +42,8 @@ def get_actor():
     #                                  ControlsPredictorDiscrete(256)))
 
     return DiscretePolicy(Necto(EARLPerceiver(128, 1, 4, 1, query_features=32, key_value_features=24),
-                                ControlsPredictorDiscrete(128)))
+                                ControlsPredictorDiscrete(128, splits=(3, 3, 2, 2, 2))),
+                          index_action_map=np.array([-1, 0, 1], [-1, 0, 1], [0, 1], [0, 1], [0, 1]))
 
 
 def get_agent(actor_lr, critic_lr=None):

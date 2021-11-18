@@ -4,6 +4,10 @@ import sys
 import torch
 import wandb
 from redis import Redis
+from rlgym.utils.reward_functions import CombinedReward
+from rlgym.utils.reward_functions.common_rewards import LiuDistancePlayerToBallReward, EventReward, \
+    LiuDistanceBallToGoalReward
+from rlgym_tools.extra_rewards.diff_reward import DiffReward
 
 from rocket_learn.ppo import PPO
 from rocket_learn.rollout_generator.redis_rollout_generator import RedisRolloutGenerator
@@ -17,12 +21,12 @@ config = dict(
     seed=123,
     actor_lr=3e-4,
     critic_lr=3e-4,
-    n_steps=1_000_000,
-    batch_size=40_000,
+    n_steps=1_00_000,
+    batch_size=10_000,
     minibatch_size=10_000,
-    epochs=35,
+    epochs=30,
     gamma=0.995,
-    iterations_per_save=10
+    iterations_per_save=100
 )
 
 
@@ -44,11 +48,12 @@ if __name__ == "__main__":
 
     def rew():
         # return CombinedReward.from_zipped(
-        #     DiffReward(VelocityPlayerToBallReward()),
-        #     (EventReward(touch=10)),
+        #     (DiffReward(LiuDistancePlayerToBallReward()), 0.05),
+        #     (DiffReward(LiuDistanceBallToGoalReward()), 10),
+        #     (EventReward(touch=0.05, goal=10)),
         # )
-        # return NectoRewardFunction(goal_w=0, shot_w=0, save_w=0, demo_w=0, boost_w=0)
-        return NectoRewardFunction()
+        return NectoRewardFunction(goal_w=0, shot_w=0, save_w=0, demo_w=0, boost_w=0)
+        # return NectoRewardFunction()
 
 
     rollout_gen = RedisRolloutGenerator(redis, obs, rew,
