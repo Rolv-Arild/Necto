@@ -40,10 +40,9 @@ def get_actor():
     #                                  Linear(256, 256), ReLU(),
     #                                  Linear(256, 256), ReLU(),
     #                                  ControlsPredictorDiscrete(256)))
-
+    split = (3, 3, 2, 2, 2)
     return DiscretePolicy(Necto(EARLPerceiver(128, 1, 4, 1, query_features=32, key_value_features=24),
-                                ControlsPredictorDiscrete(128, splits=(3, 3, 2, 2, 2))),
-                          index_action_map=np.array([-1, 0, 1], [-1, 0, 1], [0, 1], [0, 1], [0, 1]))
+                                ControlsPredictorDiscrete(128, splits=split)), split)
 
 
 def get_agent(actor_lr, critic_lr=None):

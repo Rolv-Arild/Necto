@@ -15,7 +15,7 @@ class NectoRewardFunction(RewardFunction):
             boost_w=0.5,
             touch_height_w=0.5,
             touch_accel_w=1,
-            car_accel_w=0.05,
+            car_accel_w=0.03,
             cb_accel_w=0.05
     ):
         self.team_spirit = team_spirit

@@ -55,6 +55,6 @@ echo ### Launching Worker! ###
 echo #########################
 echo.
 
-python worker.py !helper_name! !ip! !password!
+python worker.py !helper_name! !ip! !password! 1
 
 pause
