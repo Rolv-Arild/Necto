@@ -12,5 +12,5 @@ msgpack_numpy==0.4.7.1
 EARL-pytorch==0.4.3
 pillow==8.2.0
 gym==0.18.3
-rlgym==1.0.0
-rlgym-tools==1.1.4
+rlgym
+rlgym-tools
