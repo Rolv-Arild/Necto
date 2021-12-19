@@ -204,10 +204,9 @@ class NectoRewardFunction(RewardFunction):
         bm = np.nan_to_num(blue.mean())
         om = np.nan_to_num(orange.mean())
 
-        if self.last_state is not None:
-            player_rewards += player_qualities - self.player_qualities
-            player_rewards[:mid] += state_quality - self.state_quality
-            player_rewards[mid:] -= state_quality - self.state_quality
+        player_rewards += player_qualities - self.player_qualities
+        player_rewards[:mid] += state_quality - self.state_quality
+        player_rewards[mid:] -= state_quality - self.state_quality
 
         self.player_qualities = player_qualities
         self.state_quality = state_quality
@@ -236,9 +235,9 @@ class NectoRewardFunction(RewardFunction):
 
     def get_reward(self, player: PlayerData, state: GameState, previous_action: np.ndarray) -> float:
         if state != self.current_state:
-            self._calculate_rewards(state)
             self.last_state = self.current_state
             self.current_state = state
+            self._calculate_rewards(state)
             self.n = 0
         rew = self.rewards[self.n]
         self.n += 1
