@@ -41,7 +41,7 @@ def make_worker(host, name, password, limit_threads=True, send_gamestates=False)
         torch.set_num_threads(1)
     r = Redis(host=host, password=password)
     w = r.incr(WORKER_COUNTER) - 1
-    return RedisRolloutWorker(r, name, get_match(w), current_version_prob=.9,
+    return RedisRolloutWorker(r, name, get_match(w), current_version_prob=.8,
                               send_gamestates=send_gamestates)
 
 
