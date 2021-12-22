@@ -28,7 +28,7 @@ config = dict(
 
 
 if __name__ == "__main__":
-    run_id = None
+    run_id = "obbbntaa"
 
     _, ip, password = sys.argv
     wandb.login(key=os.environ["WANDB_KEY"])
@@ -72,9 +72,9 @@ if __name__ == "__main__":
         logger=logger,
     )
 
-    # if run_id is not None:
-    #     # alg.load("ppos/rocket-learn_1638479738.2639134/rocket-learn_1000/checkpoint.pt")
-    #     alg.load("ppos/rocket-learn_1638659966.7861037/rocket-learn_1250/checkpoint.pt")
+    if run_id is not None:
+        # alg.load("ppos/rocket-learn_1638479738.2639134/rocket-learn_1000/checkpoint.pt")
+        alg.load("ppos/rocket-learn_1639878346.7736878/rocket-learn_680/checkpoint.pt")
 
     log_dir = "E:\\log_directory\\"
     repo_dir = "E:\\repo_directory\\"
