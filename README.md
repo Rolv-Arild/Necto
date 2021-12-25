@@ -28,5 +28,7 @@ Rocket League is a hard game though so we're all working together to give it the
 
 ## Can I watch it learn?
 
-Soon! We're planning to set up a live stream and data graphs so you can track its learning.
+Yes! Check out our [YouTube stream here](https://www.youtube.com/channel/UCe6oW45xK4zadoHEbWizmug).
+
+[Graphs are also available](https://wandb.ai/rolv-arild/rocket-learn) for our fellow nerds.
 
