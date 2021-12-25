@@ -74,14 +74,14 @@ class BetterRandom(StateSetter):  # Random state with some triangular distributi
 
 
 class NectoStateSetter(StateSetter):
-    def __init__(self):
+    def __init__(self, kickoff_prob=0.01):
         super().__init__()
-        # self.default = DefaultState()
+        self.kickoff_prob = kickoff_prob
+        self.default = DefaultState()
         self.random = BetterRandom()
 
     def reset(self, state_wrapper: StateWrapper):
-        self.random.reset(state_wrapper)
-        # if np.random.random() < 0.9:
-        #     self.random.reset(state_wrapper)
-        # else:
-        #     self.default.reset(state_wrapper)
+        if np.random.random() < self.kickoff_prob:
+            self.default.reset(state_wrapper)
+        else:
+            self.random.reset(state_wrapper)
