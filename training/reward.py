@@ -17,12 +17,12 @@ class NectoRewardFunction(RewardFunction):
             team_spirit=0.3,
             goal_w=10,
             demo_w=5,
-            dist_w=1,  # TODO decrease slightly (1->0.5?), maybe adjust align accordingly
+            dist_w=0.75,  # Changed from 1
             align_w=0.5,
-            boost_w=0.5,  # TODO increase slightly (0.5->1?)
+            boost_w=1,  # Changed from 0.5
             spacing_w=5,
-            touch_height_w=0.5,  # TODO increase slightly (0.5->1?)
-            touch_accel_w=1,  # TODO decrease slightly (1->0.5?)
+            touch_height_w=1,  # Changed from 0.5
+            touch_accel_w=0.5,  # Changed from 1
     ):
         self.team_spirit = team_spirit
         self.current_state = None
@@ -55,7 +55,7 @@ class NectoRewardFunction(RewardFunction):
                 alignment *= -1
             liu_dist = exp(-norm(ball_pos - pos) / 1410)  # Max driving speed
             player_qualities[i] = (self.dist_w * liu_dist + self.align_w * alignment
-                                   + self.boost_w * player.boost_amount)
+                                   + self.boost_w * np.sqrt(player.boost_amount))
             # TODO sqrt(boost), increase weight slightly
             # for j in range(i + 1, len(state.players)):
             #     mate = state.players[j]
