@@ -45,6 +45,11 @@ python -m pip install -r requirements.txt -f https://download.pytorch.org/whl/to
 
 if !errorlevel! neq 0 pause & exit /b !errorlevel!
 
+REM Automatically pull latest version
+
+git checkout master
+git pull origin master
+
 set /p helper_name=Enter name: 
 set /p ip=Enter IP address: 
 set /p password=Enter password: 
@@ -55,6 +60,6 @@ echo ### Launching Worker! ###
 echo #########################
 echo.
 
-python worker.py !helper_name! !ip! !password! 1
+python worker.py !helper_name! !ip! !password! 1 2
 
 pause
