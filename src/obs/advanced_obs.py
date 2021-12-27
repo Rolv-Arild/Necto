@@ -16,7 +16,6 @@ class AdvancedObs:
         pass
 
     def build_obs(self, player: PlayerData, state: GameState, previous_action: np.ndarray) -> Any:
-
         if player.team_num == common_values.ORANGE_TEAM:
             inverted = True
             ball = state.inverted_ball

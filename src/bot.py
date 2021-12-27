@@ -1,10 +1,10 @@
+import numpy as np
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
-
-import numpy as np
-from agent import Agent
-from obs.default_obs import DefaultObs
 from rlgym_compat import GameState
+
+from agent import Agent
+from obs.necto_obs import NectoObsBuilder
 
 
 class RLGymExampleBot(BaseAgent):
@@ -13,7 +13,7 @@ class RLGymExampleBot(BaseAgent):
 
         # FIXME Hey, botmaker. Start here:
         # Swap the obs builder if you are using a different one, RLGym's AdvancedObs is also available
-        self.obs_builder = DefaultObs()
+        self.obs_builder = NectoObsBuilder()
         # Your neural network logic goes inside the Agent class, go take a look inside src/agent.py
         self.agent = Agent()
         # Adjust the tickskip if your agent was trained with a different value
@@ -48,19 +48,14 @@ class RLGymExampleBot(BaseAgent):
         if self.update_action:
             self.update_action = False
 
-            # FIXME Hey, botmaker. Verify that this is what you need for your agent
-            # By default we treat every match as a 1v1 against a fixed opponent,
-            # by doing this your bot can participate in 2v2 or 3v3 matches. Feel free to change this
             player = self.game_state.players[self.index]
+            teammates = [p for p in self.game_state.players if p.team_num == self.team and p != player]
             opponents = [p for p in self.game_state.players if p.team_num != self.team]
 
-            # Another option is to focus on the opponent closest to the ball
-            # you can use any logic you see fit to choose the op you want to focus on
-            closest_op = min(opponents, key=lambda p: np.linalg.norm(self.game_state.ball.position - p.car_data.position))
+            # Maybe draw some stuff based on attention scores?
             # self.renderer.draw_string_3d(closest_op.car_data.position, 2, 2, "CLOSEST", self.renderer.white())
 
-            # Here we are are rebuilding the player list as if the match were a 1v1
-            self.game_state.players = [player, opponents[0]]
+            self.game_state.players = [player] + teammates + opponents
 
             obs = self.obs_builder.build_obs(player, self.game_state, self.action)
             self.action = self.agent.act(obs)
