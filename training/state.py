@@ -76,6 +76,7 @@ class BetterRandom(StateSetter):  # Random state with some triangular distributi
 class NectoStateSetter(StateSetter):
     def __init__(self, kickoff_prob=0.01):
         super().__init__()
+        # TODO sample from SSL replays, kickoff-like
         self.kickoff_prob = kickoff_prob
         self.default = DefaultState()
         self.random = BetterRandom()
