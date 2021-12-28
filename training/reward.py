@@ -17,6 +17,8 @@ class NectoRewardFunction(RewardFunction):
             team_spirit=0.3,
             goal_w=10,
             goal_dist_w=10,
+            goal_speed_bonus_w=2.5,
+            goal_dist_bonus_w=2.5,
             demo_w=5,
             dist_w=0.75,  # Changed from 1
             align_w=0.5,
@@ -30,6 +32,8 @@ class NectoRewardFunction(RewardFunction):
         self.n = 0
         self.goal_w = goal_w
         self.goal_dist_w = goal_dist_w
+        self.goal_speed_bonus_w = goal_speed_bonus_w
+        self.goal_dist_bonus_w = goal_dist_bonus_w
         self.demo_w = demo_w
         self.dist_w = dist_w
         self.align_w = align_w
@@ -58,12 +62,6 @@ class NectoRewardFunction(RewardFunction):
                                    + self.boost_w * np.sqrt(player.boost_amount))
 
             # TODO use only dist of closest player for entire team
-            # for j in range(i + 1, len(state.players)):
-            #     mate = state.players[j]
-            #     if mate.team_num == player.team_num:
-            #         # Don't get too close to teammates
-            #         player_qualities[[i, j]] -= self.spacing_w * exp(-norm(pos - mate.car_data.position)
-            #                                                          / (2 * BALL_RADIUS))
 
         return state_quality, player_qualities
 
@@ -89,10 +87,6 @@ class NectoRewardFunction(RewardFunction):
                 player_rewards[i] += self.demo_w / 2
 
         mid = len(player_rewards) // 2
-        blue = player_rewards[:mid]
-        orange = player_rewards[mid:]
-        bm = np.nan_to_num(blue.mean())
-        om = np.nan_to_num(orange.mean())
 
         player_rewards += player_qualities - self.player_qualities
         player_rewards[:mid] += state_quality - self.state_quality
@@ -105,10 +99,31 @@ class NectoRewardFunction(RewardFunction):
         # random state could send ball straight into goal
         d_blue = state.blue_score - self.last_state.blue_score
         d_orange = state.orange_score - self.last_state.orange_score
-        if d_blue > 0:  # TODO add bonus for goal speed
-            player_rewards[:mid] = d_blue * self.goal_w
+        if d_blue > 0:
+            goal_speed = norm(self.last_state.ball.linear_velocity)
+            distances = norm(
+                np.stack([p.car_data.position for p in state.players[mid:]])
+                - self.last_state.ball.position,
+                axis=-1
+            )
+            player_rewards[mid:] = self.goal_dist_bonus_w * (1 - exp(-distances / CAR_MAX_SPEED))
+            player_rewards[:mid] = (self.goal_w * d_blue
+                                    + self.goal_dist_bonus_w * goal_speed / BALL_MAX_SPEED)
         if d_orange > 0:
-            player_rewards[mid:] = d_orange * self.goal_w
+            goal_speed = norm(self.last_state.ball.linear_velocity)
+            distances = norm(
+                np.stack([p.car_data.position for p in state.players[:mid]])
+                - self.last_state.ball.position,
+                axis=-1
+            )
+            player_rewards[:mid] = self.goal_dist_bonus_w * (1 - exp(-distances / CAR_MAX_SPEED))
+            player_rewards[mid:] = (self.goal_w * d_orange
+                                    + self.goal_dist_bonus_w * goal_speed / BALL_MAX_SPEED)
+
+        blue = player_rewards[:mid]
+        orange = player_rewards[mid:]
+        bm = np.nan_to_num(blue.mean())
+        om = np.nan_to_num(orange.mean())
 
         player_rewards[:mid] = (1 - self.team_spirit) * blue + self.team_spirit * bm - om
         player_rewards[mid:] = (1 - self.team_spirit) * orange + self.team_spirit * om - bm
