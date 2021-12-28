@@ -106,7 +106,7 @@ class NectoRewardFunction(RewardFunction):
                 - self.last_state.ball.position,
                 axis=-1
             )
-            player_rewards[mid:] = self.goal_dist_bonus_w * (1 - exp(-distances / CAR_MAX_SPEED))
+            player_rewards[mid:] = -self.goal_dist_bonus_w * (1 - exp(-distances / CAR_MAX_SPEED))
             player_rewards[:mid] = (self.goal_w * d_blue
                                     + self.goal_dist_bonus_w * goal_speed / BALL_MAX_SPEED)
         if d_orange > 0:
@@ -116,7 +116,7 @@ class NectoRewardFunction(RewardFunction):
                 - self.last_state.ball.position,
                 axis=-1
             )
-            player_rewards[:mid] = self.goal_dist_bonus_w * (1 - exp(-distances / CAR_MAX_SPEED))
+            player_rewards[:mid] = -self.goal_dist_bonus_w * (1 - exp(-distances / CAR_MAX_SPEED))
             player_rewards[mid:] = (self.goal_w * d_orange
                                     + self.goal_dist_bonus_w * goal_speed / BALL_MAX_SPEED)
 
