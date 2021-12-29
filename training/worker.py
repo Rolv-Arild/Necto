@@ -30,7 +30,7 @@ def get_match(r, force_match_size, constant_reward=False):
         #     (EventReward(touch=0.05, goal=10)),
         # ),
         # reward_function=NectoRewardFunction(goal_w=0, shot_w=0, save_w=0, demo_w=0, boost_w=0),
-        reward_function=ConstantReward() if constant_reward else NectoRewardFunction(),
+        reward_function=NectoRewardFunction(),
         terminal_conditions=NectoTerminalCondition(),
         obs_builder=NectoObsBuilder(),
         action_parser=NectoAction(),

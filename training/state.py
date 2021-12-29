@@ -37,7 +37,7 @@ class BetterRandom(StateSetter):  # Random state with some triangular distributi
 
         for car in state_wrapper.cars:
             for _ in range(10):  # 10 retries
-                ball_dist = np.random.exponential(2300)
+                ball_dist = np.random.exponential(BALL_MAX_SPEED)
                 ball_car = rand_vec3(ball_dist)
                 car_pos = state_wrapper.ball.position + ball_car
                 if abs(car_pos[0]) < LIM_X \
