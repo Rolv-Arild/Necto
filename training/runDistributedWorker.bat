@@ -46,8 +46,10 @@ python -m pip install -r requirements.txt -f https://download.pytorch.org/whl/to
 if !errorlevel! neq 0 pause & exit /b !errorlevel!
 
 REM Automatically pull latest version
+git stash
 git checkout master
 git pull origin master
+git stash apply
 
 set /p helper_name=Enter name: 
 set /p ip=Enter IP address: 
