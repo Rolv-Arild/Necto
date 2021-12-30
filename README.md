@@ -1,5 +1,5 @@
 
-![Necto Half-Flip In Action](https://github.com/DanielDowns/rocket_league_reinforcement_bot/blob/master/nectoGifs/nectoHalfFlip.gif)
+![Necto Half-Flip In Action](https://github.com/Rolv-Arild/Necto/blob/master/nectoGifs/nectoHalfFlip.gif)
 
 
 # What is this?
