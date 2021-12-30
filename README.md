@@ -1,11 +1,26 @@
-# Community Bot Beta Test
 
-To download and help compute Necto the community bot, first make sure you have downloaded:
-1. Rocket League
-2. bakkesmod
-3. python >=3.8
-4. git
+![Necto Half-Flip In Action](https://github.com/DanielDowns/rocket_league_reinforcement_bot/blob/master/nectoGifs/nectoHalfFlip.gif)
 
+
+# What is this?
+
+This is Necto, the RLGym community bot. It's a bot that's learning to play 1's, 2's, and 3's thanks to RLGym.
+Rocket League is a hard game though so we're all working together to give it the experience it needs.
+
+
+# Can I watch it learn?
+
+Yes! Check out our [Twitch stream here](https://www.twitch.tv/rlgym).
+
+[Graphs are also available](https://wandb.ai/rolv-arild/rocket-learn) for our fellow nerds.
+
+# Can I Help?
+
+If you're interested in offering your compute, first check to see if we need more helpers. Then, make sure you have downloaded:
+- Rocket League
+- bakkesmod
+- python >=3.8
+- git
 
 ## To start computing
 
@@ -20,15 +35,4 @@ To download and help compute Necto the community bot, first make sure you have d
 when asked for the IP and password, dm Soren and he'll fill you in. 
 
 
-## What is this?
-
-This is Necto, the RLGym community bot. It's a bot that's learning to play 1's, 2's, and 3's thanks to RLGym.
-Rocket League is a hard game though so we're all working together to give it the experience it needs.
-
-
-## Can I watch it learn?
-
-Yes! Check out our [Twitch stream here](https://www.twitch.tv/rlgym).
-
-[Graphs are also available](https://wandb.ai/rolv-arild/rocket-learn) for our fellow nerds.
 
