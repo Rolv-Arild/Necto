@@ -47,7 +47,7 @@ def make_worker(host, name, password, limit_threads=True, send_gamestates=False,
     w = r.incr(WORKER_COUNTER) - 1
     return RedisRolloutWorker(r, name,
                               match=get_match(w, force_match_size, constant_reward=send_gamestates),
-                              current_version_prob=.8,
+                              current_version_prob=.5,
                               send_gamestates=send_gamestates)
 
 
