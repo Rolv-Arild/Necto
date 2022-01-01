@@ -7,6 +7,8 @@ from rlgym.utils.common_values import CAR_MAX_SPEED, SIDE_WALL_X, BACK_WALL_Y, C
 from rlgym.utils.math import rand_vec3
 from rlgym.utils.state_setters import DefaultState, StateWrapper
 
+from rlgym_utils.extra_state_setters.goalie_state import GoaliePracticeState
+
 LIM_X = SIDE_WALL_X - 1152 / 2 - BALL_RADIUS * 2 ** 0.5
 LIM_Y = BACK_WALL_Y - 1152 / 2 - BALL_RADIUS * 2 ** 0.5
 LIM_Z = CEILING_Z - BALL_RADIUS
@@ -74,15 +76,20 @@ class BetterRandom(StateSetter):  # Random state with some triangular distributi
 
 
 class NectoStateSetter(StateSetter):
-    def __init__(self, kickoff_prob=0.01):
+    def __init__(self, kickoff_prob=0.01, goalie_prob=0.1):
         super().__init__()
         # TODO sample from SSL replays, kickoff-like
         self.kickoff_prob = kickoff_prob
+        self.goalie_prob = goalie_prob
+        
         self.default = DefaultState()
         self.random = BetterRandom()
+        self.goalie = GoaliePracticeState(first_defender_in_goal=True)
 
     def reset(self, state_wrapper: StateWrapper):
         if np.random.random() < self.kickoff_prob:
             self.default.reset(state_wrapper)
+        elif np.random.random() < self.goalie_prob:
+            self.goalie.reset(state_wrapper)
         else:
             self.random.reset(state_wrapper)
