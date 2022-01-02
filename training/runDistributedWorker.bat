@@ -45,11 +45,16 @@ python -m pip install -U -r requirements.txt -f https://download.pytorch.org/whl
 
 if !errorlevel! neq 0 pause & exit /b !errorlevel!
 
-REM Automatically pull latest version
-git stash
-git checkout master
-git pull origin master
-git stash apply
+REM Automatically pull latest version, avoid stashing if no changes to avoid errors
+if [[ git status --porcelain --untracked-files=no ]]; then
+    git stash
+    git checkout master
+    git pull origin master
+    git stash apply
+else
+    git checkout master
+    git pull origin master
+fi
 
 set /p helper_name=Enter name: 
 set /p ip=Enter IP address: 
