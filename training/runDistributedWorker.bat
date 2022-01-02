@@ -45,16 +45,29 @@ python -m pip install -U -r requirements.txt -f https://download.pytorch.org/whl
 
 if !errorlevel! neq 0 pause & exit /b !errorlevel!
 
+git status --porcelain --untracked-files=no
+
+if !errorlevel! neq 0 (
+    echo "111"
+    pause 
+) else (
+    echo "000"
+    pause
+)
+
 REM Automatically pull latest version, avoid stashing if no changes to avoid errors
-if [[ git status --porcelain --untracked-files=no ]]; then
+if  'git status --porcelain --untracked-files=no' (
     git stash
     git checkout master
     git pull origin master
     git stash apply
-else
+) else (
     git checkout master
     git pull origin master
-fi
+)
+
+pause
+
 
 set /p helper_name=Enter name: 
 set /p ip=Enter IP address: 
