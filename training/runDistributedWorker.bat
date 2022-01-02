@@ -45,8 +45,9 @@ python -m pip install -U -r requirements.txt -f https://download.pytorch.org/whl
 
 if !errorlevel! neq 0 pause & exit /b !errorlevel!
 
-git status --porcelain --untracked-files=no
-
+set diff=git status --porcelain --untracked-files=no
+echo %diff%
+pause
 if !errorlevel! neq 0 (
     echo "111"
     pause 
