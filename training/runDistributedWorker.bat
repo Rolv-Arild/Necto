@@ -57,15 +57,18 @@ if !errorlevel! neq 0 (
 )
 
 REM Automatically pull latest version, avoid stashing if no changes to avoid errors
-if  'git status --porcelain --untracked-files=no' (
+for /f %%i in ('call git status --porcelain --untracked-files=no') do set stash=%%i
+if not [%stash%] == [] (
     git stash
     git checkout master
     git pull origin master
     git stash apply
-) else (
+)
+else (
     git checkout master
     git pull origin master
 )
+
 
 pause
 
