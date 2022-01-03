@@ -40,7 +40,7 @@ class Agent:
         parsed = np.zeros((actions.shape[0], 8))
         parsed[:, 0] = actions[:, 0]  # throttle
         parsed[:, 1] = actions[:, 1]  # steer
-        parsed[:, 2] = actions[:, 0]  # pitch
+        parsed[:, 2] = -actions[:, 0]  # pitch
         parsed[:, 3] = actions[:, 1] * (1 - actions[:, 4])  # yaw
         parsed[:, 4] = actions[:, 1] * actions[:, 4]  # roll
         parsed[:, 5] = actions[:, 2]  # jump
