@@ -10,7 +10,7 @@ import torch.nn.functional as F
 class Agent:
     def __init__(self):
         cur_dir = os.path.dirname(os.path.realpath(__file__))
-        self.actor = torch.load(os.path.join(cur_dir, "necto-model.pt"))
+        self.actor = torch.jit.load(os.path.join(cur_dir, "necto-model.pt"))
 
     def act(self, state):
         # Evaluate your model here
@@ -30,6 +30,8 @@ class Agent:
 
         dist = Categorical(logits=logits)
         actions = dist.sample().numpy()
+
+        print(actions)
 
         actions = actions.reshape((-1, 5))
         actions[:, 0] = actions[:, 0] - 1

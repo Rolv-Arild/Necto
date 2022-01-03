@@ -43,6 +43,8 @@ class RLGymExampleBot(BaseAgent):
 
         ticks_elapsed = delta // 0.008  # Smaller than 1/120 on purpose
         self.ticks += ticks_elapsed
+
+        self.game_state = GameState(self.get_field_info())
         self.game_state.decode(packet, ticks_elapsed)
 
         if self.update_action:
