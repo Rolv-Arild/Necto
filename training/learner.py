@@ -19,7 +19,7 @@ config = dict(
     actor_lr=1e-4,
     critic_lr=1e-4,
     n_steps=1_000_000,
-    batch_size=40_000,
+    batch_size=80_000,
     minibatch_size=10_000,
     epochs=35,
     gamma=0.995,
@@ -74,6 +74,8 @@ if __name__ == "__main__":
 
     if run_id is not None:
         alg.load("ppos/rocket-learn_1640829955.2031806/rocket-learn_5630/checkpoint.pt")
+        # alg.agent.optimizer.param_groups[0]["lr"] = logger.config.actor_lr
+        # alg.agent.optimizer.param_groups[1]["lr"] = logger.config.critic_lr
 
     log_dir = "E:\\log_directory\\"
     repo_dir = "E:\\repo_directory\\"

@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
@@ -70,9 +72,6 @@ class RLGymExampleBot(BaseAgent):
         return self.controls
 
     def update_controls(self, action):
-        print(action)
-        if action[5] > 0 and action[2] < 0:
-            print("Hei")
         self.controls.throttle = action[0]
         self.controls.steer = action[1]
         self.controls.pitch = action[2]

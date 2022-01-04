@@ -5,6 +5,8 @@ from rlgym.utils import ObsBuilder
 from rlgym.utils.common_values import BOOST_LOCATIONS, BLUE_TEAM, ORANGE_TEAM
 from rlgym.utils.gamestates import GameState, PlayerData
 
+from rocket_learn.utils.batched_obs_builder import BatchedObsBuilder
+
 
 class NectoObsBuilder(ObsBuilder):
     _boost_locations = np.array(BOOST_LOCATIONS)
@@ -120,3 +122,104 @@ class NectoObsBuilder(ObsBuilder):
         # With EARLPerceiver we can use relative coords+vel(+more?) for key/value tensor, might be smart
         kv[0, :, 5:11] -= q[0, 0, 5:11]
         return q, kv, mask
+
+
+IS_SELF, IS_MATE, IS_OPP, IS_BALL, IS_BOOST = range(5)
+POS = slice(5, 8)
+LIN_VEL = slice(8, 11)
+FW = slice(11, 14)
+UP = slice(14, 17)
+ANG_VEL = slice(17, 20)
+BOOST, DEMOED, ON_GROUND, HAS_FLIP = range(20, 24)
+
+
+class NectoObsTEST(BatchedObsBuilder):
+    _boost_locations = np.array(BOOST_LOCATIONS)
+    _invert = np.array([1] * 5 + [-1, -1, 1] * 5 + [1] * 4)
+    _norm = np.array([1.] * 5 + [2300] * 6 + [1] * 6 + [5.5] * 3 + [1] * 4)
+
+    def __init__(self, n_players=None, tick_skip=8):
+        super().__init__()
+        self.n_players = n_players
+        self.demo_timers = None
+        self.boost_timers = None
+        self.current_state = None
+        self.current_qkv = None
+        self.current_mask = None
+        self.tick_skip = tick_skip
+
+    def _reset(self, initial_state: GameState):
+        self.demo_timers = np.zeros(len(initial_state.players))
+        self.boost_timers = np.zeros(len(initial_state.boost_pads))
+        # self.current_state = initial_state
+
+    #     def encode_gamestate(state: GameState):
+    #     state_vals = [0, state.blue_score, state.orange_score]
+    #     state_vals += state.boost_pads.tolist()
+    #
+    #     for bd in (state.ball, state.inverted_ball):
+    #         state_vals += bd.position.tolist()
+    #         state_vals += bd.linear_velocity.tolist()
+    #         state_vals += bd.angular_velocity.tolist()
+    #
+    #     for p in state.players:
+    #         state_vals += [p.car_id, p.team_num]
+    #         for cd in (p.car_data, p.inverted_car_data):
+    #             state_vals += cd.position.tolist()
+    #             state_vals += cd.quaternion.tolist()
+    #             state_vals += cd.linear_velocity.tolist()
+    #             state_vals += cd.angular_velocity.tolist()
+    #         state_vals += [
+    #             p.match_goals,
+    #             p.match_saves,
+    #             p.match_shots,
+    #             p.match_demolishes,
+    #             p.boost_pickups,
+    #             p.is_demoed,
+    #             p.on_ground,
+    #             p.ball_touched,
+    #             p.has_flip,
+    #             p.boost_amount
+    #         ]
+    #     return state_vals
+
+    def batched_build_obs(self, encoded_states: np.ndarray):
+        n_players = len(self.demo_timers)
+        sel_ball = 0
+        sel_players = slice(1, 1 + max(n_players, self.n_players))
+        sel_boosts = slice(sel_players.stop, sel_players.stop + 34)
+        n_entities = 1 + max(n_players, self.n_players) + 34
+        q = np.zeros((n_players, encoded_states.shape[0], 32))
+        kv = np.zeros((n_players, encoded_states.shape[0], 24))
+        m = np.zeros((n_players, encoded_states.shape[0], n_entities))
+        # is_self, is_teammate, is_opponent, is_ball, is_boost
+
+        # BALL
+        kv[:, sel_ball, 3] = 1
+        kv[:, sel_ball, np.r_[POS, LIN_VEL, ANG_VEL]] = encoded_states[:, 37:46]
+
+        # PLAYERS
+        q[:, :, 0] = 1
+        for i in range(n_players):
+            kv[i, i, 0] = 1
+            encoded_player = encoded_states[:, 46 + i * 25: 46 + (i + 1) * 25]
+            kv[i, :, POS] = encoded_player[:, 2: 5]
+            kv[i, :, LIN_VEL] = encoded_player[:, 5: 8]
+            quat = encoded_player[:, 8, 12]
+            # from rlgym.utils.math import quat_to_rot_mtx
+            # kv[i, :, FW] = encoded_states[:, ei: ei + 3]  # TODO convert to forward and up
+            # kv[i, :, UP] = encoded_states[:, ei: ei + 3]
+            kv[i, :, ANG_VEL] = encoded_player[:, 12: 15]
+            kv[i, :, BOOST] = encoded_player[:, 24]
+            kv[i, :, DEMOED] = encoded_player[:, 20]  # TODO demo timer
+            kv[i, :, ON_GROUND] = encoded_player[:, 21]
+            kv[i, :, HAS_FLIP] = encoded_player[:, 23]
+
+        # BOOSTS
+        kv[:, sel_boosts, 4] = 1
+        kv[:, sel_boosts, 5:8] = self._boost_locations
+        # TODO timer
+        kv[:, sel_boosts, 20] = 0.12 + 0.88 * (self._boost_locations[:, 2] > 72)
+
+    def add_action(self, previous_actions: np.ndarray, player_index=None):
+        pass

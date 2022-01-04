@@ -11,6 +11,7 @@ class Agent:
     def __init__(self):
         cur_dir = os.path.dirname(os.path.realpath(__file__))
         self.actor = torch.jit.load(os.path.join(cur_dir, "necto-model.pt"))
+        torch.set_num_threads(1)
 
     def act(self, state):
         # Evaluate your model here
@@ -30,8 +31,6 @@ class Agent:
 
         dist = Categorical(logits=logits)
         actions = dist.sample().numpy()
-
-        print(actions)
 
         actions = actions.reshape((-1, 5))
         actions[:, 0] = actions[:, 0] - 1

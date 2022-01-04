@@ -48,6 +48,7 @@ def make_worker(host, name, password, limit_threads=True, send_gamestates=False,
     return RedisRolloutWorker(r, name,
                               match=get_match(w, force_match_size, constant_reward=send_gamestates),
                               current_version_prob=.8,
+                              evaluation_prob=0.01,
                               send_gamestates=send_gamestates)
 
 
@@ -55,22 +56,45 @@ def main():
     # if not torch.cuda.is_available():
     #     sys.exit("Unable to train on your hardware, perhaps due to out-dated drivers or hardware age.")
 
-    assert len(sys.argv) >= 5  # last is optional to force match size
+    assert len(sys.argv) >= 4  # last is optional to force match size
 
     force_match_size = None
 
     print(len(sys.argv))
+
+    # import argparse
+    #
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("-n", "--name", required=True)
+    # parser.add_argument("--ip", required=True)
+    # parser.add_argument("-p", "--password", required=True)
+    # parser.add_argument("-c", "--compress", default=True)
+    # parser.add_argument("-d", "--display-only", default=True)
+    # parser.add_argument("-g", "--gamemode", default=None)
+    # parser.add_argument("-p", "--password", required=True)
+    # parser.add_argument("-p", "--password", required=True)
+    #
+    # compress = bool(strtobool(sys.argv[4])) if len(sys.argv) >= 5 else True
+    # display_only = bool(strtobool(sys.argv[5])) if len(sys.argv) >= 6 else False
+    # force_match_size = int(sys.argv[6]) if len(sys.argv) >= 7 else None
+    # current_version_prob = float(sys.argv[7]) if len(sys.argv) >= 8 else 0.8
+    # evaluation_prob = float(sys.argv[8]) if len(sys.argv) >= 9 else 0.01
+
     if len(sys.argv) == 5:
         _, name, ip, password, compress = sys.argv
-    else:
+    elif len(sys.argv) == 6:
         _, name, ip, password, compress, force_match_size = sys.argv
         force_match_size = int(force_match_size)
 
-        if force_match_size > 3 or force_match_size < 1:
+        if not (1 <= force_match_size <= 3):
             force_match_size = None
+    else:
+        raise ValueError
 
     try:
-        worker = make_worker(ip, name, password, limit_threads=True, send_gamestates=bool(strtobool(compress)),
+        worker = make_worker(ip, name, password,
+                             limit_threads=True,
+                             send_gamestates=bool(strtobool(compress)),
                              force_match_size=force_match_size)
         worker.run()
     finally:
