@@ -58,10 +58,6 @@ else (
     git pull origin master
 )
 
-
-pause
-
-
 set /p helper_name=Enter name: 
 set /p ip=Enter IP address: 
 set /p password=Enter password: 

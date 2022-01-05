@@ -15,7 +15,7 @@ from training.state import NectoStateSetter
 from training.terminal import NectoTerminalCondition
 
 
-def get_match(r, force_match_size, constant_reward=False):
+def get_match(r, force_match_size, constant_reward=False, game_speed=100):
     order = (1, 2, 3, 1, 1, 2, 1, 1, 3, 2, 1)  # Close as possible number of agents
     # order = (1, 1, 2, 1, 1, 2, 3, 1, 1, 2, 3)  # Close as possible with 1s >= 2s >= 3s
     # order = (1,)
@@ -37,18 +37,29 @@ def get_match(r, force_match_size, constant_reward=False):
         state_setter=NectoStateSetter(),
         self_play=True,
         team_size=team_size,
+        game_speed=game_speed,
     )
 
 
-def make_worker(host, name, password, limit_threads=True, send_gamestates=False, force_match_size=None):
+def make_worker(host, name, password, limit_threads=True, send_gamestates=False, force_match_size=None, is_streamer=False):
     if limit_threads:
         torch.set_num_threads(1)
     r = Redis(host=host, password=password)
     w = r.incr(WORKER_COUNTER) - 1
+    
+    current_prob = .8
+    eval_prob = .01
+    game_speed = 100
+    if is_streamer:
+        current_prob = 1
+        eval_prob = 0
+        game_speed = 1
+    
+    
     return RedisRolloutWorker(r, name,
-                              match=get_match(w, force_match_size, constant_reward=send_gamestates),
-                              current_version_prob=.8,
-                              evaluation_prob=0.01,
+                              match=get_match(w, force_match_size, constant_reward=send_gamestates, game_speed=game_speed),
+                              current_version_prob=current_prob,
+                              evaluation_prob=eval_prob,
                               send_gamestates=send_gamestates)
 
 
@@ -82,10 +93,14 @@ def main():
 
     if len(sys.argv) == 5:
         _, name, ip, password, compress = sys.argv
+        stream_state = False
     elif len(sys.argv) == 6:
         _, name, ip, password, compress, force_match_size = sys.argv
-        force_match_size = int(force_match_size)
-
+        
+        #atm, adding an extra arg assumes you're trying to stream
+        stream_state = True
+        force_match_size = int(2)
+        
         if not (1 <= force_match_size <= 3):
             force_match_size = None
     else:
@@ -95,7 +110,8 @@ def main():
         worker = make_worker(ip, name, password,
                              limit_threads=True,
                              send_gamestates=bool(strtobool(compress)),
-                             force_match_size=force_match_size)
+                             force_match_size=force_match_size,
+                             is_streamer=stream_state)
         worker.run()
     finally:
         print("Problem Detected. Killing Worker...")
