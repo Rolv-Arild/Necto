@@ -60,7 +60,8 @@ def make_worker(host, name, password, limit_threads=True, send_gamestates=False,
                               match=get_match(w, force_match_size, constant_reward=send_gamestates, game_speed=game_speed),
                               current_version_prob=current_prob,
                               evaluation_prob=eval_prob,
-                              send_gamestates=send_gamestates)
+                              send_gamestates=send_gamestates,
+                              display_only=is_streamer)
 
 
 def main():
@@ -95,11 +96,18 @@ def main():
         _, name, ip, password, compress = sys.argv
         stream_state = False
     elif len(sys.argv) == 6:
-        _, name, ip, password, compress, force_match_size = sys.argv
+        _, name, ip, password, compress, is_stream = sys.argv
         
         #atm, adding an extra arg assumes you're trying to stream
         stream_state = True
         force_match_size = int(2)
+        
+    elif len(sys.argv) == 7:
+        _, name, ip, password, compress, is_stream, force_match_size = sys.argv
+        
+        #atm, adding an extra arg assumes you're trying to stream
+        stream_state = True
+        force_match_size = int(force_match_size)
         
         if not (1 <= force_match_size <= 3):
             force_match_size = None
