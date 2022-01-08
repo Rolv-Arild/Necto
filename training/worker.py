@@ -5,8 +5,9 @@ import torch
 from redis import Redis
 from rlgym.envs import Match
 from rlgym.utils.reward_functions.common_rewards import ConstantReward
+from rlgym_tools.extra_state_setters.augment_setter import AugmentSetter
 
-from rocket_learn.rollout_generator.redis_rollout_generator import RedisRolloutWorker
+from rocket_learn.rollout_generator.redis_rollout_generator import RedisRolloutWorker, _unserialize
 from training.learner import WORKER_COUNTER
 from training.obs import NectoObsBuilder
 from training.parser import NectoAction
@@ -15,7 +16,7 @@ from training.state import NectoStateSetter
 from training.terminal import NectoTerminalCondition
 
 
-def get_match(r, force_match_size, constant_reward=False, game_speed=100):
+def get_match(r, force_match_size, replay_arrays, game_speed=100):
     order = (1, 2, 3, 1, 1, 2, 1, 1, 3, 2, 1)  # Close as possible number of agents
     # order = (1, 1, 2, 1, 1, 2, 3, 1, 1, 2, 3)  # Close as possible with 1s >= 2s >= 3s
     # order = (1,)
@@ -34,19 +35,20 @@ def get_match(r, force_match_size, constant_reward=False, game_speed=100):
         terminal_conditions=NectoTerminalCondition(),
         obs_builder=NectoObsBuilder(),
         action_parser=NectoAction(),
-        state_setter=NectoStateSetter(),
+        state_setter=AugmentSetter(NectoStateSetter(replay_arrays[team_size - 1])),
         self_play=True,
         team_size=team_size,
         game_speed=game_speed,
     )
 
 
-def make_worker(host, name, password, limit_threads=True, send_gamestates=False, force_match_size=None, is_streamer=False):
+def make_worker(host, name, password, limit_threads=True, send_gamestates=False, force_match_size=None,
+                is_streamer=False):
     if limit_threads:
         torch.set_num_threads(1)
     r = Redis(host=host, password=password)
     w = r.incr(WORKER_COUNTER) - 1
-    
+
     current_prob = .8
     eval_prob = .01
     game_speed = 100
@@ -54,10 +56,11 @@ def make_worker(host, name, password, limit_threads=True, send_gamestates=False,
         current_prob = 1
         eval_prob = 0
         game_speed = 1
-    
-    
+
+    replay_arrays = _unserialize(r.get("replay-arrays"))
+
     return RedisRolloutWorker(r, name,
-                              match=get_match(w, force_match_size, constant_reward=send_gamestates, game_speed=game_speed),
+                              match=get_match(w, force_match_size, game_speed=game_speed, replay_arrays=replay_arrays),
                               current_version_prob=current_prob,
                               evaluation_prob=eval_prob,
                               send_gamestates=send_gamestates,
@@ -97,18 +100,18 @@ def main():
         stream_state = False
     elif len(sys.argv) == 6:
         _, name, ip, password, compress, is_stream = sys.argv
-        
-        #atm, adding an extra arg assumes you're trying to stream
+
+        # atm, adding an extra arg assumes you're trying to stream
         stream_state = True
         force_match_size = int(2)
-        
+
     elif len(sys.argv) == 7:
         _, name, ip, password, compress, is_stream, force_match_size = sys.argv
-        
-        #atm, adding an extra arg assumes you're trying to stream
+
+        # atm, adding an extra arg assumes you're trying to stream
         stream_state = True
         force_match_size = int(force_match_size)
-        
+
         if not (1 <= force_match_size <= 3):
             force_match_size = None
     else:
