@@ -2,7 +2,6 @@ import os
 import random
 
 import numpy as np
-import requests
 from rlgym.utils import StateSetter
 from rlgym.utils.common_values import CAR_MAX_SPEED, SIDE_WALL_X, BACK_WALL_Y, CEILING_Z, BALL_RADIUS, CAR_MAX_ANG_VEL, \
     BALL_MAX_SPEED

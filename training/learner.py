@@ -73,7 +73,7 @@ if __name__ == "__main__":
     )
 
     if run_id is not None:
-        alg.load("ppos/rocket-learn_1640829955.2031806/rocket-learn_5630/checkpoint.pt")
+        alg.load("ppos/rocket-learn_1641320591.2569141/rocket-learn_9180/checkpoint.pt")
         # alg.agent.optimizer.param_groups[0]["lr"] = logger.config.actor_lr
         # alg.agent.optimizer.param_groups[1]["lr"] = logger.config.critic_lr
 
