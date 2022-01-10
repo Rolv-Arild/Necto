@@ -22,7 +22,7 @@ class NectoRewardFunction(RewardFunction):
             demo_w=5,
             dist_w=0.75,  # Changed from 1
             align_w=0.5,
-            boost_w=2,  # Changed from 0.5
+            boost_w=2,  # Changed from 0.5, changed from 1
             touch_height_w=1,  # Changed from 0.5
             touch_accel_w=0.5,  # Changed from 1
     ):

@@ -74,7 +74,7 @@ class RLGymExampleBot(BaseAgent):
         self.ticks += ticks_elapsed
         self.game_state.decode(packet, ticks_elapsed)
 
-        if self.update_action:
+        if self.update_action and len(self.game_state.players) > self.index:
             self.update_action = False
 
             player = self.game_state.players[self.index]
