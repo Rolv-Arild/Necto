@@ -1,6 +1,8 @@
 # import os
 import os
+import pickle
 
+import cloudpickle
 import numpy as np
 import torch
 from torch.distributions import Categorical
@@ -10,7 +12,11 @@ import torch.nn.functional as F
 class Agent:
     def __init__(self):
         cur_dir = os.path.dirname(os.path.realpath(__file__))
-        self.actor = torch.jit.load(os.path.join(cur_dir, "necto-model.pt"))
+        self.actor = torch.jit.load(os.path.join(cur_dir, "necto-model-10B.pt"))
+        # self.actor2 = cloudpickle.loads(open(os.path.join(cur_dir, 'necto-model.pickle'), 'rb').read())
+        # a = torch.nn.utils.parameters_to_vector(self.actor.parameters()).detach().numpy()
+        # b = torch.nn.utils.parameters_to_vector(self.actor2.parameters()).detach().numpy()
+        # print(np.linalg.norm(np.subtract(a, b)))
         torch.set_num_threads(1)
 
     def act(self, state):
@@ -39,7 +45,7 @@ class Agent:
         parsed = np.zeros((actions.shape[0], 8))
         parsed[:, 0] = actions[:, 0]  # throttle
         parsed[:, 1] = actions[:, 1]  # steer
-        parsed[:, 2] = -actions[:, 0]  # pitch
+        parsed[:, 2] = actions[:, 0]  # pitch
         parsed[:, 3] = actions[:, 1] * (1 - actions[:, 4])  # yaw
         parsed[:, 4] = actions[:, 1] * actions[:, 4]  # roll
         parsed[:, 5] = actions[:, 2]  # jump

@@ -8,7 +8,6 @@ from numpy import exp
 from numpy.linalg import norm
 
 
-
 class NectoRewardFunction(RewardFunction):
     BLUE_GOAL = (np.array(BLUE_GOAL_BACK) + np.array(BLUE_GOAL_CENTER)) / 2
     ORANGE_GOAL = (np.array(ORANGE_GOAL_BACK) + np.array(ORANGE_GOAL_CENTER)) / 2
@@ -23,7 +22,7 @@ class NectoRewardFunction(RewardFunction):
             demo_w=5,
             dist_w=0.75,  # Changed from 1
             align_w=0.5,
-            boost_w=1,  # Changed from 0.5
+            boost_w=2,  # Changed from 0.5
             touch_height_w=1,  # Changed from 0.5
             touch_accel_w=0.5,  # Changed from 1
     ):

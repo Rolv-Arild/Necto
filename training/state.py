@@ -246,7 +246,7 @@ class BetterRandom(StateSetter):  # Random state with some triangular distributi
 
 class NectoStateSetter(StateSetter):
     def __init__(self, replay_array, *,
-                 random_prob=0.625, replay_prob=0.25,
+                 random_prob=0.375, replay_prob=0.5,
                  kickoff_prob=0.05, kickofflike_prob=0.05,
                  goalie_prob=0.025):  # TODO shooting, dribbling
         super().__init__()

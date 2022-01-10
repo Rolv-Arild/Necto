@@ -38,15 +38,40 @@ class RLGymExampleBot(BaseAgent):
         self.action = np.zeros(8)
         self.update_action = True
 
+    # def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
+    #     game_time = packet.game_info.seconds_elapsed
+    #     fps120 = self.tick_skip * 0.0083333333333333
+    #     self.game_state.decode(packet)
+    #
+    #     if (game_time - self.prev_time) > fps120:
+    #
+    #         player = self.game_state.players[self.index]
+    #         teammates = [p for p in self.game_state.players if p.team_num == self.team and p != player]
+    #         opponents = [p for p in self.game_state.players if p.team_num != self.team]
+    #
+    #         self.game_state.players = [player] + teammates + opponents
+    #
+    #         previous_action = np.copy(self.action)
+    #         obs = self.obs_builder.build_obs(player, self.game_state, previous_action)
+    #         self.action = self.agent.act(obs)
+    #
+    #         self.update_controls(self.action)
+    #         self.prev_time = game_time
+    #     #     if self.index == 0:
+    #     #         print(packet.game_info.seconds_elapsed, 'update')
+    #     # else:
+    #     #     if self.index == 0:
+    #     #         print(packet.game_info.seconds_elapsed, 'no update')
+    #
+    #     return self.controls
+
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
-        cur_time = packet.game_info.seconds_elapsed
+        cur_time = time.perf_counter()
         delta = cur_time - self.prev_time
         self.prev_time = cur_time
 
-        ticks_elapsed = delta // 0.008  # Smaller than 1/120 on purpose
+        ticks_elapsed = delta * 120  # Smaller than 1/120 on purpose
         self.ticks += ticks_elapsed
-
-        self.game_state = GameState(self.get_field_info())
         self.game_state.decode(packet, ticks_elapsed)
 
         if self.update_action:
