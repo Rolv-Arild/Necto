@@ -81,7 +81,7 @@ class RLGymExampleBot(BaseAgent):
             teammates = [p for p in self.game_state.players if p.team_num == self.team and p != player]
             opponents = [p for p in self.game_state.players if p.team_num != self.team]
 
-            # Maybe draw some stuff based on attention scores?
+            # TODO Maybe draw some stuff based on attention scores?
             # self.renderer.draw_string_3d(closest_op.car_data.position, 2, 2, "CLOSEST", self.renderer.white())
 
             self.game_state.players = [player] + teammates + opponents

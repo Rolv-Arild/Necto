@@ -130,7 +130,8 @@ LIN_VEL = slice(8, 11)
 FW = slice(11, 14)
 UP = slice(14, 17)
 ANG_VEL = slice(17, 20)
-BOOST, DEMOED, ON_GROUND, HAS_FLIP = range(20, 24)
+BOOST, DEMO, ON_GROUND, HAS_FLIP = range(20, 24)
+ACTIONS = range(24, 32)
 
 
 class NectoObsTEST(BatchedObsBuilder):
@@ -184,42 +185,56 @@ class NectoObsTEST(BatchedObsBuilder):
     #     return state_vals
 
     def batched_build_obs(self, encoded_states: np.ndarray):
-        n_players = len(self.demo_timers)
-        sel_ball = 0
-        sel_players = slice(1, 1 + max(n_players, self.n_players))
-        sel_boosts = slice(sel_players.stop, sel_players.stop + 34)
-        n_entities = 1 + max(n_players, self.n_players) + 34
-        q = np.zeros((n_players, encoded_states.shape[0], 32))
-        kv = np.zeros((n_players, encoded_states.shape[0], 24))
-        m = np.zeros((n_players, encoded_states.shape[0], n_entities))
-        # is_self, is_teammate, is_opponent, is_ball, is_boost
+        n_players = (encoded_states.shape[1] - 46) // 25
+        lim_players = n_players if self.n_players is None else self.n_players
+        n_entities = lim_players + 1 + 34
 
-        # BALL
-        kv[:, sel_ball, 3] = 1
-        kv[:, sel_ball, np.r_[POS, LIN_VEL, ANG_VEL]] = encoded_states[:, 37:46]
+        # SELECTORS
+        sel_players = slice(0, lim_players)
+        sel_ball = sel_players.stop
+        sel_boosts = slice(sel_ball + 1, None)
+
+        # MAIN ARRAYS
+        q = np.zeros((n_players, encoded_states.shape[0], 1, 32))
+        kv = np.zeros((n_players, encoded_states.shape[0], n_entities, 24))  # Keys and values are (mostly) shared
+        m = np.zeros((n_players, encoded_states.shape[0], n_entities))  # Mask is shared
 
         # PLAYERS
-        q[:, :, 0] = 1
         for i in range(n_players):
-            kv[i, i, 0] = 1
+            kv[i, :, i, IS_SELF] = 1
             encoded_player = encoded_states[:, 46 + i * 25: 46 + (i + 1) * 25]
-            kv[i, :, POS] = encoded_player[:, 2: 5]
-            kv[i, :, LIN_VEL] = encoded_player[:, 5: 8]
+            kv[:, :, i, POS] = encoded_player[:, 2: 5]
+            kv[:, :, i, LIN_VEL] = encoded_player[:, 5: 8]
             quat = encoded_player[:, 8, 12]
             # from rlgym.utils.math import quat_to_rot_mtx
-            # kv[i, :, FW] = encoded_states[:, ei: ei + 3]  # TODO convert to forward and up
-            # kv[i, :, UP] = encoded_states[:, ei: ei + 3]
-            kv[i, :, ANG_VEL] = encoded_player[:, 12: 15]
-            kv[i, :, BOOST] = encoded_player[:, 24]
-            kv[i, :, DEMOED] = encoded_player[:, 20]  # TODO demo timer
-            kv[i, :, ON_GROUND] = encoded_player[:, 21]
-            kv[i, :, HAS_FLIP] = encoded_player[:, 23]
+            # kv[:, i, FW] = encoded_states[:, ei: ei + 3]  # FIXME convert to forward and up
+            # kv[:, i, UP] = encoded_states[:, ei: ei + 3]
+            kv[:, :, i, ANG_VEL] = encoded_player[:, 12: 15]
+            kv[:, :, i, BOOST] = encoded_player[:, 24]
+            kv[:, :, i, DEMO] = encoded_player[:, 20]  # FIXME demo timer
+            kv[:, :, i, ON_GROUND] = encoded_player[:, 21]
+            kv[:, :, i, HAS_FLIP] = encoded_player[:, 23]
+            q[i, :, 0, :] = kv[i, :, i, :]
+
+        # BALL
+        kv[:, :, sel_ball, 3] = 1
+        kv[:, :, sel_ball, np.r_[POS, LIN_VEL, ANG_VEL]] = encoded_states[:, 37:46]
 
         # BOOSTS
-        kv[:, sel_boosts, 4] = 1
-        kv[:, sel_boosts, 5:8] = self._boost_locations
-        # TODO timer
-        kv[:, sel_boosts, 20] = 0.12 + 0.88 * (self._boost_locations[:, 2] > 72)
+        kv[:, :, sel_boosts, IS_BOOST] = 1
+        kv[:, :, sel_boosts, POS] = self._boost_locations
+        kv[:, :, sel_boosts, BOOST] = 0.12 + 0.88 * (self._boost_locations[:, 2] > 72)
+        kv[:, :, sel_boosts, DEMO] = encoded_states[:, 3:3 + 34]  # FIXME boost timer
+
+        # MASK
+        m[:, :, n_players, lim_players] = 1
+
+        return [(q[i], kv[i], m[i]) for i in range(n_players)]
 
     def add_action(self, previous_actions: np.ndarray, player_index=None):
-        pass
+        if player_index is None:
+            for (q, kv, m), act in zip(self.current_obs, previous_actions):
+                q[:, 0, ACTIONS] = act
+        else:
+            q, kv, m = self.current_obs[player_index]
+            q[:, 0, ACTIONS] = previous_actions
