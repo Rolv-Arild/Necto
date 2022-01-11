@@ -1,12 +1,9 @@
-# import os
 import os
-import pickle
 
-import cloudpickle
 import numpy as np
 import torch
-from torch.distributions import Categorical
 import torch.nn.functional as F
+from torch.distributions import Categorical
 
 
 class Agent:
