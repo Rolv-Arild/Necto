@@ -13,7 +13,6 @@ class Agent:
         torch.set_num_threads(1)
 
     def act(self, state):
-        # Evaluate your model here
         state = tuple(torch.from_numpy(s).float() for s in state)
         with torch.no_grad():
             out = self.actor(state)

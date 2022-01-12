@@ -9,16 +9,12 @@ from agent import Agent
 from src.necto_obs import NectoObsBuilder
 
 
-class RLGymExampleBot(BaseAgent):
+class Necto(BaseAgent):
     def __init__(self, name, team, index):
         super().__init__(name, team, index)
 
-        # FIXME Hey, botmaker. Start here:
-        # Swap the obs builder if you are using a different one, RLGym's AdvancedObs is also available
         self.obs_builder = NectoObsBuilder()
-        # Your neural network logic goes inside the Agent class, go take a look inside src/agent.py
         self.agent = Agent()
-        # Adjust the tickskip if your agent was trained with a different value
         self.tick_skip = 8
 
         self.game_state: GameState = None
@@ -37,33 +33,6 @@ class RLGymExampleBot(BaseAgent):
         self.controls = SimpleControllerState()
         self.action = np.zeros(8)
         self.update_action = True
-
-    # def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
-    #     game_time = packet.game_info.seconds_elapsed
-    #     fps120 = self.tick_skip * 0.0083333333333333
-    #     self.game_state.decode(packet)
-    #
-    #     if (game_time - self.prev_time) > fps120:
-    #
-    #         player = self.game_state.players[self.index]
-    #         teammates = [p for p in self.game_state.players if p.team_num == self.team and p != player]
-    #         opponents = [p for p in self.game_state.players if p.team_num != self.team]
-    #
-    #         self.game_state.players = [player] + teammates + opponents
-    #
-    #         previous_action = np.copy(self.action)
-    #         obs = self.obs_builder.build_obs(player, self.game_state, previous_action)
-    #         self.action = self.agent.act(obs)
-    #
-    #         self.update_controls(self.action)
-    #         self.prev_time = game_time
-    #     #     if self.index == 0:
-    #     #         print(packet.game_info.seconds_elapsed, 'update')
-    #     # else:
-    #     #     if self.index == 0:
-    #     #         print(packet.game_info.seconds_elapsed, 'no update')
-    #
-    #     return self.controls
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
         cur_time = time.perf_counter()
