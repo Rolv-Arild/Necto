@@ -229,6 +229,8 @@ class NectoObsTEST(BatchedObsBuilder):
         # MASK
         m[:, :, n_players, lim_players] = 1
 
+        # FIXME normalize
+
         return [(q[i], kv[i], m[i]) for i in range(n_players)]
 
     def add_action(self, previous_actions: np.ndarray, player_index=None):

@@ -6,7 +6,7 @@ from rlbot.utils.structures.game_data_struct import GameTickPacket
 from rlgym_compat import GameState
 
 from agent import Agent
-from obs.necto_obs import NectoObsBuilder
+from src.necto_obs import NectoObsBuilder
 
 
 class RLGymExampleBot(BaseAgent):

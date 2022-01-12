@@ -84,7 +84,6 @@ class NectoObsBuilder:
 
         # Add players
         n += 1
-        demos = np.zeros(len(state.players))  # Which players are currently demoed
         for player in state.players:
             if player.team_num == BLUE_TEAM:
                 qkv[0, n, 1] = 1  # is_teammate
@@ -98,9 +97,15 @@ class NectoObsBuilder:
             qkv[0, n, 17:20] = car_data.angular_velocity
             qkv[0, n, 20] = player.boost_amount
             #             qkv[0, n, 21] = player.is_demoed
-            demos[n - 1] = player.is_demoed  # Keep track for demo timer
             qkv[0, n, 22] = player.on_ground
             qkv[0, n, 23] = player.has_flip
+
+            # Different than training to account for varying player amounts
+            if self.demo_timers[player.car_id] <= 0:
+                self.demo_timers[player.car_id] = 3
+            else:
+                self.demo_timers[player.car_id] = max(self.demo_timers[player.car_id] - self.tick_skip / 120, 0)
+            qkv[0, n, 21] = self.demo_timers[player.car_id] / 10
             n += 1
 
         # Add boost pads
@@ -118,14 +123,6 @@ class NectoObsBuilder:
         qkv[0, 1 + len(state.players):, 21] = self.boost_timers
         self.boost_timers -= self.tick_skip / 1200  # Pre-normalized, 120 fps for 10 seconds
         self.boost_timers[self.boost_timers < 0] = 0
-
-        # Different than training to account for varying player amounts
-        for n, player in enumerate(state.players):
-            if self.demo_timers[player.car_id] <= 0:
-                self.demo_timers[player.car_id] = 3
-            else:
-                self.demo_timers[player.car_id] = max(self.demo_timers[player.car_id] - self.tick_skip / 120, 0)
-            qkv[0, 1: 1 + n, 21] = self.demo_timers[player.car_id] / 10
 
         # Store results
         self.current_qkv = qkv / self._norm
@@ -146,13 +143,10 @@ class NectoObsBuilder:
             qkv[0, :, (1, 2)] = qkv[0, :, (2, 1)]  # Swap blue/orange
             qkv *= self._invert  # Negate x and y values
 
-        # TODO left-right normalization (always pick one side)
-
         q = qkv[0, main_n, :]
         q = np.expand_dims(np.concatenate((q, previous_action), axis=0), axis=(0, 1))
-        # kv = np.delete(qkv, main_n, axis=0)  # Delete main? Watch masking
         kv = qkv
 
-        # With EARLPerceiver we can use relative coords+vel(+more?) for key/value tensor, might be smart
+        # Use relative coordinates
         kv[0, :, 5:11] -= q[0, 0, 5:11]
         return q, kv, mask

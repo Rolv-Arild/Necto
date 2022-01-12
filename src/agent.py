@@ -9,11 +9,7 @@ from torch.distributions import Categorical
 class Agent:
     def __init__(self):
         cur_dir = os.path.dirname(os.path.realpath(__file__))
-        self.actor = torch.jit.load(os.path.join(cur_dir, "necto-model-10B.pt"))
-        # self.actor2 = cloudpickle.loads(open(os.path.join(cur_dir, 'necto-model.pickle'), 'rb').read())
-        # a = torch.nn.utils.parameters_to_vector(self.actor.parameters()).detach().numpy()
-        # b = torch.nn.utils.parameters_to_vector(self.actor2.parameters()).detach().numpy()
-        # print(np.linalg.norm(np.subtract(a, b)))
+        self.actor = torch.jit.load(os.path.join(cur_dir, "necto-model.pt"))
         torch.set_num_threads(1)
 
     def act(self, state):
