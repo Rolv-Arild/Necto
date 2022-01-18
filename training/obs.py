@@ -2,6 +2,7 @@ from typing import Any
 
 import numpy as np
 from rlgym.utils import ObsBuilder
+from rlgym.utils.action_parsers import DefaultAction
 from rlgym.utils.common_values import BOOST_LOCATIONS, BLUE_TEAM, ORANGE_TEAM
 from rlgym.utils.gamestates import GameState, PlayerData
 
@@ -297,23 +298,24 @@ class NectoObsTEST(BatchedObsBuilder):
 if __name__ == '__main__':
     import rlgym
 
-    env = rlgym.make(use_injector=True, self_play=True, team_size=3, obs_builder=NectoObsTEST())
+    env = rlgym.make(use_injector=True, self_play=True, team_size=3, obs_builder=NectoObsTEST(n_players=6))
 
     states = []
     actions = [[np.zeros(8)] for _ in range(6)]
     done = False
     obs, info = env.reset(return_info=True)
-    obss = [obs]
+    obss = [[o] for o in obs]
     states.append(info["state"])
     while not done:
         act = [env.action_space.sample() for _ in range(6)]
         for a, arr in zip(act, actions):
             arr.append(a)
         obs, reward, done, info = env.step(act)
-        obs.append(obs)
+        for os, o in zip(obss, obs):
+            os.append(o)
         states.append(info["state"])
 
-    obs_b = NectoObsTEST(n_players=3)
+    obs_b = NectoObsTEST(n_players=6)
 
     enc_states = np.array([encode_gamestate(s) for s in states])
     actions = np.array(actions)
@@ -322,11 +324,18 @@ if __name__ == '__main__':
     # FIXME ensure reconstructed obs is *exactly* the same as obs
     # reconstructed_obs = obs_b.reset(GameState(enc_states[0].tolist()))
     reconstructed_obs = obs_b.batched_build_obs(enc_states)
-    obs_b.add_actions(reconstructed_obs, actions[:-1])
+    ap = DefaultAction()
+    obs_b.add_actions(reconstructed_obs, ap.parse_actions(actions.reshape(-1, 8), None).reshape(actions.shape))
 
-    for o0, o1 in zip(obss, reconstructed_obs):
+    formatted_obss = []
+    for player_obs in obss:
+        transposed = tuple(zip(*player_obs))
+        obs_tensor = tuple(np.vstack(t) for t in transposed)
+        formatted_obss.append(obs_tensor)
+
+    for o0, o1 in zip(formatted_obss, reconstructed_obs):
         for arr0, arr1 in zip(o0, o1):
-            if not np.allclose(arr0, arr1):
+            if not np.all(arr0 == arr1):
                 print("Error")
 
     print("Hei")
