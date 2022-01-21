@@ -33,7 +33,7 @@ def get_match(r, force_match_size, replay_arrays, game_speed=100):
         # reward_function=NectoRewardFunction(goal_w=0, shot_w=0, save_w=0, demo_w=0, boost_w=0),
         reward_function=NectoRewardFunction(),
         terminal_conditions=NectoTerminalCondition(),
-        obs_builder=NectoObsTEST(),
+        obs_builder=NectoObsTEST(n_players=6),
         action_parser=NectoActionTEST(),
         state_setter=AugmentSetter(NectoStateSetter(replay_arrays[team_size - 1])),
         self_play=True,
