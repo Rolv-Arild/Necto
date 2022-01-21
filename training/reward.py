@@ -22,9 +22,9 @@ class NectoRewardFunction(RewardFunction):
             demo_w=5,
             dist_w=0.75,  # Changed from 1
             align_w=0.5,
-            boost_w=2,  # Changed from 0.5, changed from 1
-            touch_height_w=1,  # Changed from 0.5
-            touch_accel_w=0.5,  # Changed from 1
+            boost_w=2,
+            touch_height_w=1,
+            touch_accel_w=0.25,
     ):
         self.team_spirit = team_spirit
         self.current_state = None
@@ -46,8 +46,9 @@ class NectoRewardFunction(RewardFunction):
 
     def _state_qualities(self, state: GameState):
         ball_pos = state.ball.position
-        state_quality = self.goal_dist_w * (exp(-norm(self.ORANGE_GOAL - ball_pos) / CAR_MAX_SPEED)
-                                            - exp(-norm(self.BLUE_GOAL - ball_pos) / CAR_MAX_SPEED))
+
+        state_quality = 0.5 * self.goal_dist_w * (exp(-norm(self.ORANGE_GOAL - ball_pos) / CAR_MAX_SPEED)
+                                                  - exp(-norm(self.BLUE_GOAL - ball_pos) / CAR_MAX_SPEED))
         player_qualities = np.zeros(len(state.players))
         for i, player in enumerate(state.players):
             pos = player.car_data.position
@@ -63,7 +64,8 @@ class NectoRewardFunction(RewardFunction):
 
             # TODO use only dist of closest player for entire team
 
-        return state_quality, player_qualities
+        # Half state quality because it is applied to both teams, thus doubling it in the reward distributing
+        return state_quality / 2, player_qualities
 
     def _calculate_rewards(self, state: GameState):
         # Calculate rewards, positive for blue, negative for orange
@@ -76,10 +78,14 @@ class NectoRewardFunction(RewardFunction):
             if player.ball_touched:
                 curr_vel = self.current_state.ball.linear_velocity
                 last_vel = self.last_state.ball.linear_velocity
-                # On ground it gets about 0.05 just for touching, as well as some extra for the speed it produces
+
+                # On ground it gets about 0.04 just for touching, as well as some extra for the speed it produces
+                # Ball is pretty close to z=150 when on top of car, so 1 second of dribbling is 1 reward
                 # Close to 20 in the limit with ball on top, but opponents should learn to challenge way before that
-                player_rewards[i] += (self.touch_height_w * state.ball.position[2] / CEILING_Z +
-                                      self.touch_accel_w * norm(curr_vel - last_vel) / BALL_MAX_SPEED)
+                player_rewards[i] += self.touch_height_w * state.ball.position[2] / 2250
+
+                # Changing speed of ball from standing still to supersonic (~83kph) is 1 reward
+                player_rewards[i] += self.touch_accel_w * norm(curr_vel - last_vel) / CAR_MAX_SPEED
 
             if player.is_demoed and not last.is_demoed:
                 player_rewards[i] -= self.demo_w / 2

@@ -9,8 +9,8 @@ from rlgym_tools.extra_state_setters.augment_setter import AugmentSetter
 
 from rocket_learn.rollout_generator.redis_rollout_generator import RedisRolloutWorker, _unserialize
 from training.learner import WORKER_COUNTER
-from training.obs import NectoObsBuilder
-from training.parser import NectoAction
+from training.obs import NectoObsBuilder, NectoObsTEST
+from training.parser import NectoAction, NectoActionTEST
 from training.reward import NectoRewardFunction
 from training.state import NectoStateSetter
 from training.terminal import NectoTerminalCondition
@@ -33,8 +33,8 @@ def get_match(r, force_match_size, replay_arrays, game_speed=100):
         # reward_function=NectoRewardFunction(goal_w=0, shot_w=0, save_w=0, demo_w=0, boost_w=0),
         reward_function=NectoRewardFunction(),
         terminal_conditions=NectoTerminalCondition(),
-        obs_builder=NectoObsBuilder(),
-        action_parser=NectoAction(),
+        obs_builder=NectoObsTEST(),
+        action_parser=NectoActionTEST(),
         state_setter=AugmentSetter(NectoStateSetter(replay_arrays[team_size - 1])),
         self_play=True,
         team_size=team_size,

@@ -36,7 +36,8 @@ class NectoActionTEST(ActionParser):
                                 continue
                             if pitch == roll == jump == 0:  # Duplicate with ground
                                 continue
-                            handbrake = pitch != 0 or roll != 0
+                            # Enable handbrake for potential wavedashes
+                            handbrake = jump == 1 and (pitch != 0 or yaw != 0 or roll != 0)
                             actions.append([boost, yaw, pitch, yaw, roll, jump, boost, handbrake])
         actions = np.array(actions)
         return actions

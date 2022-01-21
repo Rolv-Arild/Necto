@@ -8,8 +8,8 @@ from redis import Redis
 from rocket_learn.ppo import PPO
 from rocket_learn.rollout_generator.redis_rollout_generator import RedisRolloutGenerator
 from training.agent import get_agent
-from training.obs import NectoObsBuilder
-from training.parser import NectoAction
+from training.obs import NectoObsBuilder, NectoObsTEST
+from training.parser import NectoAction, NectoActionTEST
 from training.reward import NectoRewardFunction
 
 WORKER_COUNTER = "worker-counter"
@@ -19,16 +19,15 @@ config = dict(
     actor_lr=1e-4,
     critic_lr=1e-4,
     n_steps=1_000_000,
-    batch_size=80_000,
-    minibatch_size=10_000,
-    epochs=35,
+    batch_size=100_000,
+    minibatch_size=25_000,
+    epochs=30,
     gamma=0.995,
     iterations_per_save=10
 )
 
-
 if __name__ == "__main__":
-    run_id = "obbbntaa"
+    run_id = None
 
     _, ip, password = sys.argv
     wandb.login(key=os.environ["WANDB_KEY"])
@@ -38,24 +37,7 @@ if __name__ == "__main__":
     redis = Redis(host=ip, password=password)
     redis.delete(WORKER_COUNTER)  # Reset to 0
 
-
-    def obs():
-        return NectoObsBuilder()
-
-
-    def rew():
-        # return CombinedReward.from_zipped(
-        #     (DiffReward(LiuDistancePlayerToBallReward()), 0.05),
-        #     (DiffReward(LiuDistanceBallToGoalReward()), 10),
-        #     (EventReward(touch=0.05, goal=10)),
-        # )
-        # return NectoRewardFunction(goal_w=0, shot_w=0, save_w=0, demo_w=0, boost_w=0)
-        return NectoRewardFunction()
-
-    def act():
-        return NectoAction()
-
-    rollout_gen = RedisRolloutGenerator(redis, obs, rew, act,
+    rollout_gen = RedisRolloutGenerator(redis, lambda: NectoObsTEST(6), NectoRewardFunction, NectoActionTEST,
                                         save_every=logger.config.iterations_per_save,
                                         logger=logger, clear=run_id is None)
 
