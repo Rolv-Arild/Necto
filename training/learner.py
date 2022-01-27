@@ -21,7 +21,7 @@ config = dict(
     n_steps=1_000_000,
     batch_size=100_000,
     minibatch_size=20_000,
-    epochs=30,
+    epochs=10,
     gamma=0.995,
     iterations_per_save=10
 )

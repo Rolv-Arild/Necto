@@ -152,4 +152,4 @@ class NectoRewardFunction(RewardFunction):
             self.n = 0
         rew = self.rewards[self.n]
         self.n += 1
-        return float(rew)
+        return float(rew) / 5.2  # Divide to get std of expected reward to ~1 at start, helps value net a little
