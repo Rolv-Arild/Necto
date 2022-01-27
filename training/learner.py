@@ -5,7 +5,6 @@ import torch
 import wandb
 from redis import Redis
 
-from rocket_learn.ppo import PPO
 from rocket_learn.rollout_generator.redis_rollout_generator import RedisRolloutGenerator
 from training.agent import get_agent
 from training.obs import NectoObsBuilder, NectoObsTEST
@@ -20,13 +19,14 @@ config = dict(
     critic_lr=1e-4,
     n_steps=1_000_000,
     batch_size=100_000,
-    minibatch_size=20_000,
+    minibatch_size=25_000,
     epochs=10,
     gamma=0.995,
     iterations_per_save=10
 )
 
 if __name__ == "__main__":
+    from rocket_learn.ppo import PPO
     run_id = None
 
     _, ip, password = sys.argv
