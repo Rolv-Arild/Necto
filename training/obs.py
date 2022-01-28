@@ -277,6 +277,8 @@ class NectoObsTEST(BatchedObsBuilder):
         kv[teams == 1] *= self._invert
         kv[teams == 1][..., (IS_MATE, IS_OPP)] = kv[teams == 1][..., (IS_OPP, IS_MATE)]  # Swap teams
 
+        kv[:, :, :, 5:11] -= q[:, :, :, 5:11]
+
         kv /= self._norm
 
         q[np.arange(n_players), :, 0, :kv.shape[-1]] = kv[np.arange(n_players), :, np.arange(n_players), :]

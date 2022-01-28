@@ -22,7 +22,7 @@ class NectoRewardFunction(RewardFunction):
             demo_w=5,
             dist_w=0.75,  # Changed from 1
             align_w=0.5,
-            boost_w=2,
+            boost_w=1,
             touch_height_w=1,
             touch_accel_w=0.25,
     ):
@@ -152,4 +152,4 @@ class NectoRewardFunction(RewardFunction):
             self.n = 0
         rew = self.rewards[self.n]
         self.n += 1
-        return float(rew) / 5.2  # Divide to get std of expected reward to ~1 at start, helps value net a little
+        return float(rew) / 3.2  # Divide to get std of expected reward to ~1 at start, helps value net a little
