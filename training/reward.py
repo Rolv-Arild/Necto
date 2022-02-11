@@ -25,6 +25,7 @@ class NectoRewardFunction(RewardFunction):
             boost_w=1,
             touch_height_w=1,
             touch_accel_w=0.25,
+            opponent_punish_w=1
     ):
         self.team_spirit = team_spirit
         self.current_state = None
@@ -40,6 +41,7 @@ class NectoRewardFunction(RewardFunction):
         self.boost_w = boost_w
         self.touch_height_w = touch_height_w
         self.touch_accel_w = touch_accel_w
+        self.opponent_punish_w = opponent_punish_w
         self.state_quality = None
         self.player_qualities = None
         self.rewards = None
@@ -131,8 +133,10 @@ class NectoRewardFunction(RewardFunction):
         bm = np.nan_to_num(blue.mean())
         om = np.nan_to_num(orange.mean())
 
-        player_rewards[:mid] = (1 - self.team_spirit) * blue + self.team_spirit * bm - om
-        player_rewards[mid:] = (1 - self.team_spirit) * orange + self.team_spirit * om - bm
+        player_rewards[:mid] = ((1 - self.team_spirit) * blue + self.team_spirit * bm
+                                - self.opponent_punish_w * om)
+        player_rewards[mid:] = ((1 - self.team_spirit) * orange + self.team_spirit * om
+                                - self.opponent_punish_w * bm)
 
         self.last_state = state
         self.rewards = player_rewards
