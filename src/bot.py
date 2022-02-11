@@ -1,5 +1,3 @@
-import time
-
 import numpy as np
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
@@ -35,11 +33,11 @@ class Necto(BaseAgent):
         self.update_action = True
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
-        cur_time = time.perf_counter()
+        cur_time = packet.game_info.seconds_elapsed
         delta = cur_time - self.prev_time
         self.prev_time = cur_time
 
-        ticks_elapsed = delta * 120  # Smaller than 1/120 on purpose
+        ticks_elapsed = delta * 120
         self.ticks += ticks_elapsed
         self.game_state.decode(packet, ticks_elapsed)
 
