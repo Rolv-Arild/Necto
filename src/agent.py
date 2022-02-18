@@ -15,7 +15,7 @@ class Agent:
     def act(self, state):
         state = tuple(torch.from_numpy(s).float() for s in state)
         with torch.no_grad():
-            out = self.actor(state)
+            out, weights = self.actor(state)
 
         max_shape = max(o.shape[-1] for o in out)
         logits = torch.stack(
@@ -44,4 +44,4 @@ class Agent:
         parsed[:, 6] = actions[:, 3]  # boost
         parsed[:, 7] = actions[:, 4]  # handbrake
 
-        return parsed[0]
+        return parsed[0], weights
