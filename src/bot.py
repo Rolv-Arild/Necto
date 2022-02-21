@@ -29,7 +29,7 @@ class Necto(BaseAgent):
     def __init__(self, name, team, index):
         super().__init__(name, team, index)
 
-        self.obs_builder = NectoObsBuilder()
+        self.obs_builder = None
         self.agent = Agent()
         self.tick_skip = 8
 
@@ -40,11 +40,13 @@ class Necto(BaseAgent):
         self.ticks = 0
         self.prev_time = 0
         self.kickoff_index = -1
-        print('RLGymExampleBot Ready - Index:', index)
+        print('Necto Ready - Index:', index)
 
     def initialize_agent(self):
         # Initialize the rlgym GameState object now that the game is active and the info is available
-        self.game_state = GameState(self.get_field_info())
+        field_info = self.get_field_info()
+        self.obs_builder = NectoObsBuilder(field_info=field_info)
+        self.game_state = GameState(field_info)
         self.ticks = self.tick_skip  # So we take an action the first tick
         self.prev_time = 0
         self.controls = SimpleControllerState()

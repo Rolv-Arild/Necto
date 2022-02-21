@@ -13,10 +13,10 @@ NectoAction = KBMAction
 class NectoActionTEST(ActionParser):
     def __init__(self):
         super().__init__()
-        self._lookup_table = self._make_lookup_table()
+        self._lookup_table = self.make_lookup_table()
 
     @staticmethod
-    def _make_lookup_table():
+    def make_lookup_table():
         actions = []
         # Ground
         for throttle in (-1, 0, 1):

@@ -44,11 +44,10 @@ BOOST_LOCATIONS = (
 
 
 class NectoObsBuilder:
-    _boost_locations = np.array(BOOST_LOCATIONS)
     _invert = np.array([1] * 5 + [-1, -1, 1] * 5 + [1] * 4)
     _norm = np.array([1.] * 5 + [2300] * 6 + [1] * 6 + [5.5] * 3 + [1] * 4)
 
-    def __init__(self, tick_skip=8):
+    def __init__(self, tick_skip=8, field_info=None):
         super().__init__()
         self.demo_timers = None
         self.boost_timers = None
@@ -56,6 +55,13 @@ class NectoObsBuilder:
         self.current_qkv = None
         self.current_mask = None
         self.tick_skip = tick_skip
+        if field_info is None:
+            self._boost_locations = np.array(BOOST_LOCATIONS)
+            self._boost_types = self._boost_locations[:, 2] > 72
+        else:
+            self._boost_locations = np.array([[bp.location.x, bp.location.y, bp.location.z]
+                                              for bp in field_info.boost_pads[:field_info.num_boosts]])
+            self._boost_types = np.array([bp.is_full_boost for bp in field_info.boost_pads[:field_info.num_boosts]])
 
     def reset(self, initial_state: GameState):
         self.demo_timers = Counter()
@@ -113,7 +119,7 @@ class NectoObsBuilder:
         boost_pads = state.boost_pads
         qkv[0, n:, 4] = 1  # is_boost
         qkv[0, n:, 5:8] = self._boost_locations
-        qkv[0, n:, 20] = 0.12 + 0.88 * (self._boost_locations[:, 2] > 72)  # Boost amount
+        qkv[0, n:, 20] = 0.12 + 0.88 * self._boost_types  # Boost amount
         #         qkv[0, n:, 21] = boost_pads
 
         # Boost and demo timers

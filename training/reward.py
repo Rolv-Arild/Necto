@@ -22,7 +22,8 @@ class NectoRewardFunction(RewardFunction):
             demo_w=5,
             dist_w=0.75,  # Changed from 1
             align_w=0.5,
-            boost_w=1,
+            boost_gain_w=1,
+            boost_lose_w=1,
             touch_height_w=1,
             touch_accel_w=0.25,
             opponent_punish_w=1
@@ -38,7 +39,8 @@ class NectoRewardFunction(RewardFunction):
         self.demo_w = demo_w
         self.dist_w = dist_w
         self.align_w = align_w
-        self.boost_w = boost_w
+        self.boost_gain_w = boost_gain_w
+        self.boost_lose_w = boost_lose_w
         self.touch_height_w = touch_height_w
         self.touch_accel_w = touch_accel_w
         self.opponent_punish_w = opponent_punish_w
@@ -61,8 +63,8 @@ class NectoRewardFunction(RewardFunction):
             if player.team_num == ORANGE_TEAM:
                 alignment *= -1
             liu_dist = exp(-norm(ball_pos - pos) / 1410)  # Max driving speed
-            player_qualities[i] = (self.dist_w * liu_dist + self.align_w * alignment
-                                   + self.boost_w * np.sqrt(player.boost_amount))
+            player_qualities[i] = (self.dist_w * liu_dist + self.align_w * alignment)
+            # + self.boost_w * np.sqrt(player.boost_amount))
 
             # TODO use only dist of closest player for entire team
 
@@ -88,6 +90,12 @@ class NectoRewardFunction(RewardFunction):
 
                 # Changing speed of ball from standing still to supersonic (~83kph) is 1 reward
                 player_rewards[i] += self.touch_accel_w * norm(curr_vel - last_vel) / CAR_MAX_SPEED
+
+            boost_diff = np.sqrt(player.boost_amount) - np.sqrt(last.boost_amount)
+            if boost_diff >= 0:
+                player_rewards[i] += self.boost_gain_w * boost_diff
+            else:
+                player_rewards[i] += self.boost_lose_w * boost_diff
 
             if player.is_demoed and not last.is_demoed:
                 player_rewards[i] -= self.demo_w / 2

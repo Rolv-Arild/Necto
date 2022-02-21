@@ -22,7 +22,8 @@ config = dict(
     minibatch_size=25_000,
     epochs=30,
     gamma=0.995,
-    iterations_per_save=10
+    iterations_per_save=10,
+    ent_coef=0.0,
 )
 
 if __name__ == "__main__":
@@ -51,6 +52,7 @@ if __name__ == "__main__":
         minibatch_size=logger.config.minibatch_size,
         epochs=logger.config.epochs,
         gamma=logger.config.gamma,
+        ent_coef=logger.config.ent_coef,
         logger=logger,
     )
 
