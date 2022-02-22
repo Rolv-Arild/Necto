@@ -23,7 +23,7 @@ config = dict(
     epochs=30,
     gamma=0.995,
     iterations_per_save=10,
-    ent_coef=0.0,
+    ent_coef=0.01,
 )
 
 if __name__ == "__main__":
