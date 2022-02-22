@@ -12,14 +12,14 @@ from training.parser import NectoActionTEST
 
 
 class ControlsPredictorDot(nn.Module):
-    def __init__(self, features=32, layers=2, actions=None):
+    def __init__(self, in_features, features=32, layers=2, actions=None):
         super().__init__()
         if actions is None:
             self.actions = torch.from_numpy(NectoActionTEST.make_lookup_table()).float()
         else:
             self.actions = torch.from_numpy(actions).float()
         self.net = mlp(8, features, layers)
-        self.emb_convertor = nn.LazyLinear(features)
+        self.emb_convertor = nn.Linear(in_features, features)
 
     def forward(self, player_emb: torch.Tensor, actions: Optional[torch.Tensor] = None):
         if actions is None:
@@ -56,7 +56,7 @@ def get_actor():
     # split = (3, 3, 2, 2, 2)
     split = (90,)
     return DiscretePolicy(Necto(EARLPerceiver(128, 2, 4, 1, query_features=32, key_value_features=24),
-                                ControlsPredictorDot()), split)
+                                ControlsPredictorDot(128)), split)
 
 
 def get_agent(actor_lr, critic_lr=None):
