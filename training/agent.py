@@ -74,6 +74,8 @@ def get_agent(actor_lr, critic_lr=None):
 if __name__ == '__main__':
     d = DiscretePolicy(Necto(EARLPerceiver(128, 2, 4, 1, query_features=32, key_value_features=24),
                              ControlsPredictorDot(128)), (90,))
+    # d = DiscretePolicy(Necto(EARLPerceiver(128, 2, 4, 1, query_features=32, key_value_features=24),
+    #                          ControlsPredictorDiscrete(128)))
     q, kv, m = (torch.ones((4, 1, 32)), torch.ones((4, 41, 24)), torch.zeros((4, 41)))
     dist = d.get_action_distribution((q, kv, m))
     q[0, 0, 0] = -2
