@@ -27,9 +27,11 @@ class ControlsPredictorDot(nn.Module):
             actions = self.actions
         player_emb = self.emb_convertor(player_emb)
         act_emb = self.net(actions)
-        if act_emb.ndim == 3:
-            return torch.einsum("bad,bpd->bpa", act_emb, player_emb)
-        return torch.einsum("ad,bpd->bpa", act_emb, player_emb)
+        if act_emb.ndim == 2:
+            act_emb = act_emb.unsqueeze(0).repeat(player_emb.shape[0], 1, 1)
+            # return torch.einsum("ad,bpd->bpa", act_emb, player_emb)
+
+        return torch.einsum("bad,bpd->bpa", act_emb, player_emb)
 
 
 class Necto(nn.Module):  # Wraps earl + an output and takes only a single input
@@ -40,9 +42,9 @@ class Necto(nn.Module):  # Wraps earl + an output and takes only a single input
         self.output = output
 
     def forward(self, inp):
-        q, kv, m = inp
+        q, kv, m, a = inp
         res = self.earl(q, kv, m)
-        res = self.output(self.relu(res))
+        res = self.output(self.relu(res), a)
         if isinstance(res, tuple):
             return tuple(r for r in res)
         return res
@@ -77,14 +79,17 @@ if __name__ == '__main__':
                              ControlsPredictorDot(128)), (90,))
     # d = DiscretePolicy(Necto(EARLPerceiver(128, 2, 4, 1, query_features=32, key_value_features=24),
     #                          ControlsPredictorDiscrete(128)))
-    q, kv, m = (torch.ones((4, 1, 32)), torch.ones((4, 41, 24)), torch.zeros((4, 41)))
-    dist = d.get_action_distribution((q, kv, m))
-    kv[:, 0, 0] = 0
-    q[0, :, :] = 0
-    kv[1, :, :] = 0
-    m[2, 0] = 1
+    q, kv, m, a = (torch.normal(0, 1, size=(4, 1, 32)),
+                torch.normal(0, 1, size=(4, 41, 24)),
+                torch.zeros((4, 41)),
+                torch.normal(0, 1, size=(90, 8)).unsqueeze(0).repeat(4, 1, 1))
+    dist = d.get_action_distribution((q, kv, m, a))
+    # kv[:, 0, 0] = 0
+    # q[0, :, :] = 0
+    # kv[1, :, :] = 0
+    # m[2, 0] = 1
 
-    dist = d.get_action_distribution((q, kv, m))
+    dist2 = d.get_action_distribution((q[:1], kv[:1], m[:1], a[:1]))
     # print(torch.all((dist.logits == dist2.logits), dim=2))
     act = d.sample_action(dist)
     act[:] = act[0]
