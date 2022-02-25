@@ -2,10 +2,11 @@ from typing import Optional
 
 import numpy as np
 import torch
-from earl_pytorch import EARLPerceiver, ControlsPredictorDiscrete, mlp
+from earl_pytorch import EARLPerceiver, ControlsPredictorDiscrete
 from torch import nn
 from torch.nn import Linear, Sequential, ReLU
 
+from earl_pytorch.util.util import mlp
 from rocket_learn.agent.actor_critic_agent import ActorCriticAgent
 from rocket_learn.agent.discrete_policy import DiscretePolicy
 from training.parser import NectoActionTEST
@@ -78,10 +79,15 @@ if __name__ == '__main__':
     #                          ControlsPredictorDiscrete(128)))
     q, kv, m = (torch.ones((4, 1, 32)), torch.ones((4, 41, 24)), torch.zeros((4, 41)))
     dist = d.get_action_distribution((q, kv, m))
-    q[0, 0, 0] = -2
-    dist2 = d.get_action_distribution((q, kv, m))
-    print(torch.all((dist.logits == dist2.logits), dim=2))
+    kv[:, 0, 0] = 0
+    q[0, :, :] = 0
+    kv[1, :, :] = 0
+    m[2, 0] = 1
+
+    dist = d.get_action_distribution((q, kv, m))
+    # print(torch.all((dist.logits == dist2.logits), dim=2))
     act = d.sample_action(dist)
+    act[:] = act[0]
     lp = d.log_prob(dist, act)
     ent = d.entropy(dist, act)
 

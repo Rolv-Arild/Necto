@@ -1,9 +1,7 @@
 import numpy as np
 import torch
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
-from rlbot.messages.flat.QuickChatSelection import QuickChatSelection
 from rlbot.utils.structures.game_data_struct import GameTickPacket
-from rlbot.utils.structures.quick_chats import QuickChats
 from rlgym_compat import GameState
 
 from agent import Agent
@@ -26,12 +24,16 @@ KICKOFF_NUMPY = np.array([
 
 
 class Necto(BaseAgent):
-    def __init__(self, name, team, index):
+    def __init__(self, name, team, index, beta=1):
         super().__init__(name, team, index)
 
         self.obs_builder = None
         self.agent = Agent()
         self.tick_skip = 8
+
+        # Beta controls randomness:
+        # 1=best action, 0.5=sampling from probability, 0=random, -1=worst action, or anywhere inbetween
+        self.beta = beta
 
         self.game_state: GameState = None
         self.controls = None
@@ -78,6 +80,10 @@ class Necto(BaseAgent):
         self.renderer.end_rendering()
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
+        # THINGS TO TEST:
+        # Deterministic
+        # Invert boosts
+        # If 2 tick delay works well, try 3 tick etc.
         cur_time = packet.game_info.seconds_elapsed
         delta = cur_time - self.prev_time
         self.prev_time = cur_time
@@ -86,8 +92,8 @@ class Necto(BaseAgent):
         self.ticks += ticks_elapsed
         self.game_state.decode(packet, ticks_elapsed)
 
-        if self.update_action and len(self.game_state.players) > self.index:
-            self.update_action = False
+        if self.update_action == 1 and len(self.game_state.players) > self.index:
+            self.update_action = 0
 
             player = self.game_state.players[self.index]
             teammates = [p for p in self.game_state.players if p.team_num == self.team and p != player]
@@ -96,14 +102,16 @@ class Necto(BaseAgent):
             self.game_state.players = [player] + teammates + opponents
 
             obs = self.obs_builder.build_obs(player, self.game_state, self.action)
-            self.action, weights = self.agent.act(obs)
+            self.action, weights = self.agent.act(obs, self.beta)
 
             self.render_attention_weights(weights, obs)
+
+        # self.update_action -= 1
 
         if self.ticks >= self.tick_skip:
             self.ticks = 0
             self.update_controls(self.action)
-            self.update_action = True
+            self.update_action = 1
 
         if packet.game_info.is_kickoff_pause:
             if self.kickoff_index == -1:
