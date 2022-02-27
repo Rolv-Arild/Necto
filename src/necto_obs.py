@@ -116,7 +116,7 @@ class NectoObsBuilder:
 
         # Add boost pads
         n = 1 + len(state.players)
-        boost_pads = state.boost_pads
+        boost_pads = 1 - state.boost_pads #value of state.boost_pads is 1 when boost is present and 0 when boost is picked up
         qkv[0, n:, 4] = 1  # is_boost
         qkv[0, n:, 5:8] = self._boost_locations
         qkv[0, n:, 20] = 0.12 + 0.88 * self._boost_types  # Boost amount
