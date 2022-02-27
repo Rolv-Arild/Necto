@@ -46,7 +46,7 @@ class NectoActionTEST(ActionParser):
         return Discrete(len(self._lookup_table))
 
     def parse_actions(self, actions: Any, state: GameState) -> np.ndarray:
-        return self._lookup_table[actions]
+        return self._lookup_table[actions.squeeze()]
 
 
 if __name__ == '__main__':
