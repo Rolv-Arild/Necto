@@ -8,15 +8,32 @@ This is Necto, the RLGym community bot. It's a bot that's learning to play 1's, 
 Rocket League is a hard game though so we're all working together to give it the experience it needs.
 
 
+# Can I play against it? 
+
+Yup! Go download the [RLBot pack](https://rlbot.org/) and Necto is one of several bots that you can play against.
+ Make sure fps is set to 120 and VSync is turned off.
+
+# What Rocket League rank is Necto?
+
+We estimate the RLBot version of Necto is high Diamond. 
+
+
 # Can I watch it learn?
 
 Yes! Check out our [Twitch stream here](https://www.twitch.tv/rlgym).
 
 [Graphs are also available](https://wandb.ai/rolv-arild/rocket-learn) for our fellow nerds.
 
-# Can I Help?
 
-If you're interested in offering your compute, first check to see if we need more helpers. Then, make sure you have downloaded:
+
+# Could it learn by playing against me?
+
+Soon ;)
+
+
+# Can donate my compute to help it learn faster?
+
+If you're interested in offering your compute, first check our discord to see if we need more helpers. Then, make sure you have downloaded:
 - Rocket League
 - bakkesmod
 - python >=3.8
