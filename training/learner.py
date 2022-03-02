@@ -4,8 +4,10 @@ import sys
 import torch
 import wandb
 from redis import Redis
+from rlgym.utils.action_parsers import DiscreteAction
 
 from rocket_learn.rollout_generator.redis_rollout_generator import RedisRolloutGenerator
+from rocket_learn.utils.util import ExpandAdvancedObs
 from training.agent import get_agent
 from training.obs import NectoObsBuilder, NectoObsTEST
 from training.parser import NectoAction, NectoActionTEST
@@ -19,7 +21,7 @@ config = dict(
     critic_lr=1e-4,
     n_steps=1_000_000,
     batch_size=100_000,
-    minibatch_size=25_000,
+    minibatch_size=5_000,
     epochs=30,
     gamma=0.995,
     iterations_per_save=10,
@@ -38,7 +40,7 @@ if __name__ == "__main__":
     redis = Redis(host=ip, password=password)
     redis.delete(WORKER_COUNTER)  # Reset to 0
 
-    rollout_gen = RedisRolloutGenerator(redis, lambda: NectoObsTEST(6), NectoRewardFunction, NectoActionTEST,
+    rollout_gen = RedisRolloutGenerator(redis, lambda: NectoObsBuilder(), NectoRewardFunction, NectoActionTEST,
                                         save_every=logger.config.iterations_per_save,
                                         logger=logger, clear=run_id is None)
 
@@ -57,7 +59,7 @@ if __name__ == "__main__":
     )
 
     if run_id is not None:
-        alg.load("ppos/rocket-learn_1641320591.2569141/rocket-learn_9180/checkpoint.pt")
+        alg.load("ppos/rocket-learn_1645075699.7287009/rocket-learn_3060/checkpoint.pt")
         # alg.agent.optimizer.param_groups[0]["lr"] = logger.config.actor_lr
         # alg.agent.optimizer.param_groups[1]["lr"] = logger.config.critic_lr
 

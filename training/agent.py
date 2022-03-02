@@ -2,6 +2,8 @@ from typing import Optional
 
 import numpy as np
 import torch
+from torch.nn.init import xavier_uniform_
+
 from earl_pytorch import EARLPerceiver, ControlsPredictorDiscrete
 from torch import nn
 from torch.nn import Linear, Sequential, ReLU
@@ -26,11 +28,12 @@ class ControlsPredictorDot(nn.Module):
         if actions is None:
             actions = self.actions
         player_emb = self.emb_convertor(player_emb)
-        if actions.ndim == 2:
-            actions = actions.unsqueeze(0).repeat(player_emb.shape[0], 1, 1)
+        act_emb = self.net(actions.to(player_emb.device))
 
-            # return torch.einsum("ad,bpd->bpa", act_emb, player_emb)
-        act_emb = self.net(actions)
+        if act_emb.ndim == 2:
+            # actions = actions.unsqueeze(0).repeat(player_emb.shape[0], 1, 1)
+
+            return torch.einsum("ad,bpd->bpa", act_emb, player_emb)
 
         return torch.einsum("bad,bpd->bpa", act_emb, player_emb)
 
@@ -41,23 +44,34 @@ class Necto(nn.Module):  # Wraps earl + an output and takes only a single input
         self.earl = earl
         self.relu = ReLU()
         self.output = output
+        self._reset_parameters()
+
+    def _reset_parameters(self):
+        r"""Initiate parameters in the transformer model. Taken from PyTorch Transformer impl"""
+        for p in self.parameters():
+            if p.dim() > 1:
+                xavier_uniform_(p)
 
     def forward(self, inp):
         q, kv, m = inp
         res = self.earl(q, kv, m)
         res = self.output(self.relu(res))
         if isinstance(res, tuple):
-            return tuple(r for r in res)
-        return res
+            return tuple(r[:, 0, :] for r in res)
+        return res[:, 0, :]
 
 
 def get_critic():
+    # return DiscretePolicy(
+    #     Sequential(Linear(107, 128), Linear(128, 128), Linear(128, 128), Linear(128, 1)))
     return Necto(EARLPerceiver(128, 2, 4, 1, query_features=32, key_value_features=24),
                  Linear(128, 1))
 
 
 def get_actor():
-    # split = (3, 3, 2, 2, 2)
+    # split = (3,) * 5 + (2,) * 3
+    # return DiscretePolicy(
+    #     Sequential(Linear(107, 128), Linear(128, 128), Linear(128, 128), ControlsPredictorDiscrete(128, split)), split)
     split = (90,)
     return DiscretePolicy(Necto(EARLPerceiver(128, 2, 4, 1, query_features=32, key_value_features=24),
                                 ControlsPredictorDot(128)), split)
