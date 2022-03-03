@@ -21,7 +21,7 @@ config = dict(
     critic_lr=1e-4,
     n_steps=1_000_000,
     batch_size=100_000,
-    minibatch_size=5_000,
+    minibatch_size=20_000,
     epochs=30,
     gamma=0.995,
     iterations_per_save=10,
@@ -40,7 +40,7 @@ if __name__ == "__main__":
     redis = Redis(host=ip, password=password)
     redis.delete(WORKER_COUNTER)  # Reset to 0
 
-    rollout_gen = RedisRolloutGenerator(redis, lambda: NectoObsBuilder(), NectoRewardFunction, NectoActionTEST,
+    rollout_gen = RedisRolloutGenerator(redis, lambda: NectoObsTEST(6), NectoRewardFunction, NectoActionTEST,
                                         save_every=logger.config.iterations_per_save,
                                         logger=logger, clear=run_id is None)
 
