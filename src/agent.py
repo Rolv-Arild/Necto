@@ -33,8 +33,11 @@ class Agent:
         elif beta == -1:
             actions = np.argmin(logits, axis=-1)
         else:
-            beta = math.log((beta + 1) / (1 - beta), 3)
-            dist = Categorical(logits=logits * beta)
+            if beta == 0:
+                logits[torch.isfinite(logits)] = 0
+            else:
+                logits *= math.log((beta + 1) / (1 - beta), 3)
+            dist = Categorical(logits=logits)
             actions = dist.sample().numpy()
 
         actions = actions.reshape((-1, 5))
