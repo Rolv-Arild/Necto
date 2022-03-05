@@ -36,12 +36,6 @@ def get_match(r, force_match_size, replay_arrays, game_speed=100, human_match=Fa
         terminals = NectoHumanTerminalCondition
 
     return Match(
-        # reward_function=CombinedReward.from_zipped(
-        #     (DiffReward(LiuDistancePlayerToBallReward()), 0.05),
-        #     (DiffReward(LiuDistanceBallToGoalReward()), 10),
-        #     (EventReward(touch=0.05, goal=10)),
-        # ),
-        # reward_function=NectoRewardFunction(goal_w=0, shot_w=0, save_w=0, demo_w=0, boost_w=0),
         reward_function=NectoRewardFunction(goal_w=1, team_spirit=0, opponent_punish_w=0, boost_lose_w=0, ),
         terminal_conditions=terminals(),
         obs_builder=NectoObsBuilder(),
@@ -119,7 +113,7 @@ def main():
     ip = args.ip
     password = args.password
     compress = args.compress
-    stream_state = args.display_only
+    stream_state = args.streamer_mode
     force_match_size = args.force_match_size
     human_match = args.human_match
 

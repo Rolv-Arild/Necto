@@ -46,7 +46,25 @@ class NectoActionTEST(ActionParser):
         return Discrete(len(self._lookup_table))
 
     def parse_actions(self, actions: Any, state: GameState) -> np.ndarray:
-        return self._lookup_table[actions.squeeze()]
+        #hacky pass through to allow multiple types of agent actions while still parsing nectos
+
+        #strip out fillers, pass through 8sets, get look up table values, recombine
+        parsed_actions = []
+        for action in actions:
+            #support reconstruction
+            if action.size != 8:
+                if action.shape == 0:
+                    action = np.expand_dims(action, axis=0)
+                # to allow different action spaces, pad out short ones (assume later unpadding in parser)
+                action = np.pad(action.astype('float64'), (0, 8 - action.size), 'constant', constant_values=np.NAN)
+
+            if np.isnan(action).any(): #its been padded, delete to go back to original
+                stripped_action = (action[~np.isnan(action)]).squeeze().astype('int')
+                parsed_actions.append(self._lookup_table[stripped_action])
+            else:
+                parsed_actions.append(action)
+
+        return np.asarray(parsed_actions)
 
 
 if __name__ == '__main__':
