@@ -69,7 +69,7 @@ def get_critic():
 
 
 def get_actor():
-    # split = (3,) * 5 + (2,) * 3
+    # split = (3,) * 2 + (2,) * 3
     # return DiscretePolicy(
     #     Sequential(Linear(107, 128), Linear(128, 128), Linear(128, 128), ControlsPredictorDiscrete(128, split)), split)
     split = (90,)
