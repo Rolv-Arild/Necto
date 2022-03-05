@@ -25,7 +25,8 @@ echo ### Launching Streamer Session! ###
 echo ###################################
 echo.
 
-python worker.py NectoStreamer !ip! !password! False stream
+REM python worker.py NectoStreamer !ip! !password! False stream
+python worker.py NectoStreamer !ip! !password! --streamer_mode --force_match_size 2
 
 REM How to run stream and specify match size, that last arg here vv
 REM python worker.py NectoStreamer !ip! !password! False stream 3

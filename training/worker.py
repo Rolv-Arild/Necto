@@ -13,6 +13,8 @@ from rlgym_tools.extra_state_setters.augment_setter import AugmentSetter
 
 from rocket_learn.rollout_generator.redis_rollout_generator import RedisRolloutWorker, _unserialize
 from rocket_learn.utils.util import ExpandAdvancedObs
+from rocket_learn.agent.pretrained_agents.human_agent import HumanAgent
+
 from training.learner import WORKER_COUNTER
 from training.obs import NectoObsBuilder, NectoObsTEST
 from training.parser import NectoAction, NectoActionTEST
@@ -54,13 +56,22 @@ def make_worker(host, name, password, limit_threads=True, send_gamestates=False,
     r = Redis(host=host, password=password)
     w = r.incr(WORKER_COUNTER) - 1
 
+    agents = None
+    human = None
+
     current_prob = .8
     eval_prob = .01
     game_speed = 100
+
     if is_streamer:
         current_prob = 1
         eval_prob = 0
         game_speed = 1
+
+    if is_human_match:
+        game_speed = 1
+        human = HumanAgent()
+
 
     replay_arrays = _unserialize(r.get("replay-arrays"))
 
@@ -70,7 +81,9 @@ def make_worker(host, name, password, limit_threads=True, send_gamestates=False,
                               past_version_prob=1-current_prob,
                               evaluation_prob=eval_prob,
                               send_gamestates=send_gamestates,
-                              display_only=is_streamer)
+                              streamer_mode=is_streamer,
+                              pretrained_agents=agents,
+                              human_agent= human)
 
 
 def main():
@@ -86,24 +99,14 @@ def main():
                         help='<required> learner password')
     parser.add_argument('--compress', action='store_true',
                         help='compress sent data')
-    parser.add_argument('--display_only', action='store_true',
+    parser.add_argument('--streamer_mode', action='store_true',
                         help='Start a streamer match, dont learn with this instance')
     parser.add_argument('--force_match_size', type=int, nargs='?', metavar='match_size',
                         help='Force a 1s, 2s, or 3s game')
     parser.add_argument('--human_match', action='store_true',
                         help='A required integer positional argument')
 
-    parser.print_help()
     args = parser.parse_args()
-
-    print("Argument values:")
-    print(args.name)
-    print(args.ip)
-    print(args.password)
-    print(args.compress)
-    print(args.display_only)
-    print(args.force_match_size)
-    print(args.human_match)
 
     name = args.name
     ip = args.ip
@@ -111,6 +114,7 @@ def main():
     compress = args.compress
     stream_state = args.display_only
     force_match_size = args.force_match_size
+    human_match = args.human_match
 
     if force_match_size is not None and (force_match_size < 1 or force_match_size > 3):
         parser.error("Match size must be between 1 and 3")
@@ -120,7 +124,8 @@ def main():
                              limit_threads=True,
                              send_gamestates=compress,
                              force_match_size=force_match_size,
-                             is_streamer=stream_state)
+                             is_streamer=stream_state,
+                             is_human_match=human_match)
         worker.run()
     finally:
         print("Problem Detected. Killing Worker...")

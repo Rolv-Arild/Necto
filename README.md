@@ -28,7 +28,7 @@ Yes! Check out our [Twitch stream here](https://www.twitch.tv/rlgym).
 
 # Could it learn by playing against me?
 
-Soon ;)
+We're working on it!
 
 
 # Can donate my compute to help it learn faster?
