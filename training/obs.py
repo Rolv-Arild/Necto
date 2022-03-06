@@ -224,6 +224,19 @@ class NectoObsTEST(BatchedObsBuilder):
 
         return theta
 
+    @staticmethod
+    def convert_to_relative(q, kv):
+        kv[..., POS] -= q[..., POS]
+        forward = q[..., FW]
+        theta = np.arctan2(forward[..., 1], forward[..., 0])
+        theta = np.expand_dims(theta, axis=-1)
+        ct = np.cos(theta)
+        st = np.sin(theta)
+        xs = kv[..., POS.start:ANG_VEL.stop:3]
+        ys = kv[..., POS.start + 1:ANG_VEL.stop:3]
+        kv[..., POS.start:ANG_VEL.stop:3] = ct * xs + st * ys  # x-components
+        kv[..., POS.start + 1:ANG_VEL.stop:3] = -st * xs + ct * ys  # y-components
+
     def batched_build_obs(self, encoded_states: np.ndarray):
         ball_start_index = 3 + GameState.BOOST_PADS_LENGTH
         players_start_index = ball_start_index + GameState.BALL_STATE_LENGTH
@@ -277,7 +290,8 @@ class NectoObsTEST(BatchedObsBuilder):
         kv[teams == 1] *= self._invert
         kv[teams == 1][..., (IS_MATE, IS_OPP)] = kv[teams == 1][..., (IS_OPP, IS_MATE)]  # Swap teams
 
-        kv[:, :, :, 5:11] -= q[:, :, :, 5:11]
+        self.convert_to_relative(q, kv)
+        # kv[:, :, :, 5:11] -= q[:, :, :, 5:11]
 
         kv /= self._norm
 
