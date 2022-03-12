@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
     rollout_gen = RedisRolloutGenerator(redis,
                                         lambda: NectoObsTEST(6),
-                                        lambda: NectoRewardFunction(goal_w=1, team_spirit=0., opponent_punish_w=0., boost_lose_w=0),
+                                        NectoRewardFunction, # lambda: NectoRewardFunction(goal_w=1, team_spirit=0., opponent_punish_w=0., boost_lose_w=0),
                                         NectoAction,
                                         save_every=logger.config.iterations_per_save,
                                         logger=logger, clear=run_id is None)

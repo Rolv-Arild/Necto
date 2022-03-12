@@ -28,13 +28,8 @@ def get_match(r, force_match_size, replay_arrays, game_speed=100):
         team_size = force_match_size
 
     return Match(
-        # reward_function=CombinedReward.from_zipped(
-        #     (DiffReward(LiuDistancePlayerToBallReward()), 0.05),
-        #     (DiffReward(LiuDistanceBallToGoalReward()), 10),
-        #     (EventReward(touch=0.05, goal=10)),
-        # ),
-        # reward_function=NectoRewardFunction(goal_w=0, shot_w=0, save_w=0, demo_w=0, boost_w=0),
-        reward_function=NectoRewardFunction(goal_w=1, team_spirit=0., opponent_punish_w=0., boost_lose_w=0),
+        # reward_function=NectoRewardFunction(goal_w=1, team_spirit=0., opponent_punish_w=0., boost_lose_w=0),
+        reward_function=NectoRewardFunction(),
         terminal_conditions=NectoTerminalCondition(),
         obs_builder=NectoObsTEST(6),
         action_parser=NectoActionTEST(),  # NectoActionTEST(),  # KBMAction()
