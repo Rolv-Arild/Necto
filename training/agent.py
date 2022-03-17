@@ -11,14 +11,14 @@ from torch.nn import Linear, Sequential, ReLU
 from earl_pytorch.util.util import mlp
 from rocket_learn.agent.actor_critic_agent import ActorCriticAgent
 from rocket_learn.agent.discrete_policy import DiscretePolicy
-from training.parser import NectoActionTEST
+from training.parser import NectoAction
 
 
 class ControlsPredictorDot(nn.Module):
     def __init__(self, in_features, features=32, layers=2, actions=None):
         super().__init__()
         if actions is None:
-            self.actions = torch.from_numpy(NectoActionTEST.make_lookup_table()).float()
+            self.actions = torch.from_numpy(NectoAction.make_lookup_table()).float()
         else:
             self.actions = torch.from_numpy(actions).float()
         self.net = mlp(8, features, layers)

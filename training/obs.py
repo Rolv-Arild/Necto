@@ -10,7 +10,7 @@ from rocket_learn.utils.batched_obs_builder import BatchedObsBuilder
 from rocket_learn.utils.util import encode_gamestate
 
 
-class NectoObsBuilder(ObsBuilder):
+class NectoObsOLD(ObsBuilder):
     _boost_locations = np.array(BOOST_LOCATIONS)
     _invert = np.array([1] * 5 + [-1, -1, 1] * 5 + [1] * 4)
     _norm = np.array([1.] * 5 + [2300] * 6 + [1] * 6 + [5.5] * 3 + [1] * 4)
@@ -136,7 +136,7 @@ BOOST, DEMO, ON_GROUND, HAS_FLIP = range(20, 24)
 ACTIONS = range(24, 32)
 
 
-class NectoObsTEST(BatchedObsBuilder):
+class NectoObsBuilder(BatchedObsBuilder):
     _boost_locations = np.array(BOOST_LOCATIONS)
     _invert = np.array([1] * 5 + [-1, -1, 1] * 5 + [1] * 4)
     _norm = np.array([1.] * 5 + [2300] * 6 + [1] * 6 + [5.5] * 3 + [1] * 4)
@@ -337,7 +337,7 @@ if __name__ == '__main__':
             return obss
 
 
-    env = rlgym.make(use_injector=True, self_play=True, team_size=3, obs_builder=CombinedObs(NectoObsTEST(n_players=6), NectoObsBuilder()))
+    env = rlgym.make(use_injector=True, self_play=True, team_size=3, obs_builder=CombinedObs(NectoObsBuilder(n_players=6), NectoObsOLD()))
 
     states = []
     actions = [[np.zeros(8)] for _ in range(6)]
@@ -354,7 +354,7 @@ if __name__ == '__main__':
             os.append(o)
         states.append(info["state"])
 
-    obs_b = NectoObsTEST(n_players=6)
+    obs_b = NectoObsBuilder(n_players=6)
 
     enc_states = np.array([encode_gamestate(s) for s in states])
     actions = np.array(actions)

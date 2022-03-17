@@ -7,10 +7,10 @@ from rlgym.utils.action_parsers import ActionParser
 from rlgym.utils.gamestates import GameState
 from rlgym_tools.extra_action_parsers.kbm_act import KBMAction
 
-NectoAction = KBMAction
+NectoActionOLD = KBMAction
 
 
-class NectoActionTEST(ActionParser):
+class NectoAction(ActionParser):
     def __init__(self):
         super().__init__()
         self._lookup_table = self.make_lookup_table()
@@ -50,5 +50,5 @@ class NectoActionTEST(ActionParser):
 
 
 if __name__ == '__main__':
-    ap = NectoActionTEST()
+    ap = NectoAction()
     print(ap.get_action_space())
