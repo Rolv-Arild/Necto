@@ -32,8 +32,8 @@ class NectoAction(ActionParser):
                 for roll in (-1, 0, 1):
                     for jump in (0, 1):
                         for boost in (0, 1):
-                            if jump == 1 and roll != 0:  # Only need yaw for sideflip
-                                continue
+                            #if jump == 1 and roll != 0:  # Only need yaw for sideflip
+                            #    continue
                             if pitch == roll == jump == 0:  # Duplicate with ground
                                 continue
                             # Enable handbrake for potential wavedashes
