@@ -109,9 +109,9 @@ def main():
 
     args = parser.parse_args()
 
-    name = args.name
-    ip = args.ip
-    password = args.password
+    name = args.name.replace("'", "")
+    ip = args.ip.replace("'", "")
+    password = args.password.replace("'", "")
     compress = args.compress
     stream_state = args.streamer_mode
     force_match_size = args.force_match_size
