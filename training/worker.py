@@ -106,7 +106,7 @@ def main():
     parser.add_argument('--force_match_size', type=int, nargs='?', metavar='match_size',
                         help='Force a 1s, 2s, or 3s game')
     parser.add_argument('--human_match', action='store_true',
-                        help='A required integer positional argument')
+                        help='Play a human match against Necto')
 
     args = parser.parse_args()
 
