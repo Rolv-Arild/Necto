@@ -102,11 +102,14 @@ class Necto(BaseAgent):
             self.game_state.players = [player] + teammates + opponents
 
             obs = self.obs_builder.build_obs(player, self.game_state, self.action)
-            self.action, weights = self.agent.act(obs, self.beta)
+
+            beta = self.beta
+            if packet.game_info.is_match_ended:
+                # or not (packet.game_info.is_kickoff_pause or packet.game_info.is_round_active): Removed due to kickoff
+                beta = 0  # Celebrate with random actions
+            self.action, weights = self.agent.act(obs, beta)
 
             self.render_attention_weights(weights, obs)
-
-        # self.update_action -= 1
 
         if self.ticks >= self.tick_skip:
             self.ticks = 0
@@ -114,7 +117,9 @@ class Necto(BaseAgent):
             self.update_action = 1
 
         if packet.game_info.is_kickoff_pause:
-            if self.kickoff_index == -1:
+            if self.kickoff_index >= 0:
+                self.kickoff_index += round(ticks_elapsed)
+            elif self.kickoff_index == -1:
                 is_kickoff_taker = False
                 ball_pos = np.array([packet.game_ball.physics.location.x, packet.game_ball.physics.location.y])
                 positions = np.array([[car.physics.location.x, car.physics.location.y]
@@ -141,7 +146,6 @@ class Necto(BaseAgent):
                 action = KICKOFF_NUMPY[self.kickoff_index]
                 self.action = action
                 self.update_controls(self.action)
-                self.kickoff_index += 1
         else:
             self.kickoff_index = -1
 

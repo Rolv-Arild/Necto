@@ -10,7 +10,7 @@ from rocket_learn.utils.batched_obs_builder import BatchedObsBuilder
 from rocket_learn.utils.util import encode_gamestate
 
 
-class NectoObsBuilder(ObsBuilder):
+class NectoObsOLD(ObsBuilder):
     _boost_locations = np.array(BOOST_LOCATIONS)
     _invert = np.array([1] * 5 + [-1, -1, 1] * 5 + [1] * 4)
     _norm = np.array([1.] * 5 + [2300] * 6 + [1] * 6 + [5.5] * 3 + [1] * 4)
@@ -136,7 +136,7 @@ BOOST, DEMO, ON_GROUND, HAS_FLIP = range(20, 24)
 ACTIONS = range(24, 32)
 
 
-class NectoObsTEST(BatchedObsBuilder):
+class NectoObsBuilder(BatchedObsBuilder):
     _boost_locations = np.array(BOOST_LOCATIONS)
     _invert = np.array([1] * 5 + [-1, -1, 1] * 5 + [1] * 4)
     _norm = np.array([1.] * 5 + [2300] * 6 + [1] * 6 + [5.5] * 3 + [1] * 4)
@@ -224,6 +224,23 @@ class NectoObsTEST(BatchedObsBuilder):
 
         return theta
 
+    @staticmethod
+    def convert_to_relative(q, kv):
+        # kv[..., POS.start:LIN_VEL.stop] -= q[..., POS.start:LIN_VEL.stop]
+        kv[..., POS] -= q[..., POS]
+        forward = q[..., FW]
+        theta = np.arctan2(forward[..., 0], forward[..., 1])
+        theta = np.expand_dims(theta, axis=-1)
+        ct = np.cos(theta)
+        st = np.sin(theta)
+        xs = kv[..., POS.start:ANG_VEL.stop:3]
+        ys = kv[..., POS.start + 1:ANG_VEL.stop:3]
+        # Use temp variables to prevent modifying original array
+        nx = ct * xs - st * ys
+        ny = st * xs + ct * ys
+        kv[..., POS.start:ANG_VEL.stop:3] = nx  # x-components
+        kv[..., POS.start + 1:ANG_VEL.stop:3] = ny  # y-components
+
     def batched_build_obs(self, encoded_states: np.ndarray):
         ball_start_index = 3 + GameState.BOOST_PADS_LENGTH
         players_start_index = ball_start_index + GameState.BALL_STATE_LENGTH
@@ -263,8 +280,8 @@ class NectoObsTEST(BatchedObsBuilder):
 
             kv[i, :, i, IS_SELF] = 1
             kv[:, :, i, POS] = encoded_player[:, 2: 5]  # TODO constants for these indices
-            kv[:, :, i, LIN_VEL] = encoded_player[:, 5: 8]
-            quats = encoded_player[:, 8: 12]
+            kv[:, :, i, LIN_VEL] = encoded_player[:, 9: 12]
+            quats = encoded_player[:, 5: 9]
             rot_mtx = self._quats_to_rot_mtx(quats)
             kv[:, :, i, FW] = rot_mtx[:, :, 0]
             kv[:, :, i, UP] = rot_mtx[:, :, 2]
@@ -275,13 +292,16 @@ class NectoObsTEST(BatchedObsBuilder):
             kv[:, :, i, HAS_FLIP] = encoded_player[:, 36]
 
         kv[teams == 1] *= self._invert
-        kv[teams == 1][..., (IS_MATE, IS_OPP)] = kv[teams == 1][..., (IS_OPP, IS_MATE)]  # Swap teams
-
-        kv[:, :, :, 5:11] -= q[:, :, :, 5:11]
+        kv[np.argwhere(teams == 1), ..., (IS_MATE, IS_OPP)] = kv[
+            np.argwhere(teams == 1), ..., (IS_OPP, IS_MATE)]  # Swap teams
 
         kv /= self._norm
 
-        q[np.arange(n_players), :, 0, :kv.shape[-1]] = kv[np.arange(n_players), :, np.arange(n_players), :]
+        for i in range(n_players):
+            q[i, :, 0, :kv.shape[-1]] = kv[i, :, i, :]
+
+        self.convert_to_relative(q, kv)
+        # kv[:, :, :, 5:11] -= q[:, :, :, 5:11]
 
         # MASK
         m[:, :, n_players: lim_players] = 1
@@ -300,7 +320,24 @@ class NectoObsTEST(BatchedObsBuilder):
 if __name__ == '__main__':
     import rlgym
 
-    env = rlgym.make(use_injector=True, self_play=True, team_size=3, obs_builder=NectoObsTEST(n_players=6))
+
+    class CombinedObs(ObsBuilder):
+        def __init__(self, *obsbs):
+            super().__init__()
+            self.obsbs = obsbs
+
+        def reset(self, initial_state: GameState):
+            for obsb in self.obsbs:
+                obsb.reset(initial_state)
+
+        def build_obs(self, player: PlayerData, state: GameState, previous_action: np.ndarray) -> Any:
+            obss = []
+            for obsb in self.obsbs:
+                obss.append(obsb.build_obs(player, state, previous_action))
+            return obss
+
+
+    env = rlgym.make(use_injector=True, self_play=True, team_size=3, obs_builder=CombinedObs(NectoObsBuilder(n_players=6), NectoObsOLD()))
 
     states = []
     actions = [[np.zeros(8)] for _ in range(6)]
@@ -317,7 +354,7 @@ if __name__ == '__main__':
             os.append(o)
         states.append(info["state"])
 
-    obs_b = NectoObsTEST(n_players=6)
+    obs_b = NectoObsBuilder(n_players=6)
 
     enc_states = np.array([encode_gamestate(s) for s in states])
     actions = np.array(actions)

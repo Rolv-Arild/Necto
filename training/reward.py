@@ -23,7 +23,8 @@ class NectoRewardFunction(RewardFunction):
             dist_w=0.75,  # Changed from 1
             align_w=0.5,
             boost_gain_w=1,
-            boost_lose_w=1,
+            boost_lose_w=0.5,
+            touch_grass_w=0.005,
             touch_height_w=1,
             touch_accel_w=0.25,
             opponent_punish_w=1
@@ -41,6 +42,7 @@ class NectoRewardFunction(RewardFunction):
         self.align_w = align_w
         self.boost_gain_w = boost_gain_w
         self.boost_lose_w = boost_lose_w
+        self.touch_grass_w = touch_grass_w
         self.touch_height_w = touch_height_w
         self.touch_accel_w = touch_accel_w
         self.opponent_punish_w = opponent_punish_w
@@ -64,9 +66,8 @@ class NectoRewardFunction(RewardFunction):
                 alignment *= -1
             liu_dist = exp(-norm(ball_pos - pos) / 1410)  # Max driving speed
             player_qualities[i] = (self.dist_w * liu_dist + self.align_w * alignment)
-            # + self.boost_w * np.sqrt(player.boost_amount))
 
-            # TODO use only dist of closest player for entire team
+            # TODO use only dist of closest player for entire team?
 
         # Half state quality because it is applied to both teams, thus doubling it in the reward distributing
         return state_quality / 2, player_qualities
@@ -91,11 +92,15 @@ class NectoRewardFunction(RewardFunction):
                 # Changing speed of ball from standing still to supersonic (~83kph) is 1 reward
                 player_rewards[i] += self.touch_accel_w * norm(curr_vel - last_vel) / CAR_MAX_SPEED
 
+            # Encourage collecting and saving boost, sqrt to weight boost more the less it has
             boost_diff = np.sqrt(player.boost_amount) - np.sqrt(last.boost_amount)
             if boost_diff >= 0:
                 player_rewards[i] += self.boost_gain_w * boost_diff
             else:
                 player_rewards[i] += self.boost_lose_w * boost_diff
+
+            # Encourage being in the air (slightly)
+            player_rewards[i] -= player.on_ground * self.touch_grass_w
 
             if player.is_demoed and not last.is_demoed:
                 player_rewards[i] -= self.demo_w / 2
@@ -164,4 +169,4 @@ class NectoRewardFunction(RewardFunction):
             self.n = 0
         rew = self.rewards[self.n]
         self.n += 1
-        return float(rew) / 3.2  # Divide to get std of expected reward to ~1 at start, helps value net a little
+        return float(rew)  # / 3.2  # Divide to get std of expected reward to ~1 at start, helps value net a little

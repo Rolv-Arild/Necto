@@ -9,8 +9,8 @@ from rlgym.utils.action_parsers import DiscreteAction
 from rocket_learn.rollout_generator.redis_rollout_generator import RedisRolloutGenerator
 from rocket_learn.utils.util import ExpandAdvancedObs
 from training.agent import get_agent
-from training.obs import NectoObsBuilder, NectoObsTEST
-from training.parser import NectoAction, NectoActionTEST
+from training.obs import NectoObsOLD, NectoObsBuilder
+from training.parser import NectoActionOLD, NectoAction
 from training.reward import NectoRewardFunction
 
 WORKER_COUNTER = "worker-counter"
@@ -21,7 +21,7 @@ config = dict(
     critic_lr=1e-4,
     n_steps=1_000_000,
     batch_size=100_000,
-    minibatch_size=5_000,
+    minibatch_size=20_000,
     epochs=30,
     gamma=0.995,
     iterations_per_save=10,
@@ -30,17 +30,22 @@ config = dict(
 
 if __name__ == "__main__":
     from rocket_learn.ppo import PPO
-    run_id = None
+
+    run_id = "2xpdcuhq"
 
     _, ip, password = sys.argv
     wandb.login(key=os.environ["WANDB_KEY"])
-    logger = wandb.init(project="rocket-learn", entity="rolv-arild", id=run_id, config=config)
+    logger = wandb.init(name="necto-v2", project="necto", entity="rolv-arild", id=run_id, config=config)
     torch.manual_seed(logger.config.seed)
 
     redis = Redis(host=ip, password=password)
     redis.delete(WORKER_COUNTER)  # Reset to 0
 
-    rollout_gen = RedisRolloutGenerator(redis, lambda: NectoObsBuilder(), NectoRewardFunction, NectoActionTEST,
+    rollout_gen = RedisRolloutGenerator(redis,
+                                        lambda: NectoObsBuilder(6),
+                                        lambda: NectoRewardFunction(),
+                                        # lambda: NectoRewardFunction(goal_w=1, team_spirit=0., opponent_punish_w=0., boost_lose_w=0),
+                                        NectoAction,
                                         save_every=logger.config.iterations_per_save,
                                         logger=logger, clear=run_id is None)
 
@@ -59,7 +64,7 @@ if __name__ == "__main__":
     )
 
     if run_id is not None:
-        alg.load("ppos/rocket-learn_1645075699.7287009/rocket-learn_3060/checkpoint.pt")
+        alg.load("ppos/necto_1647513842.6013725/necto_150/checkpoint.pt")
         # alg.agent.optimizer.param_groups[0]["lr"] = logger.config.actor_lr
         # alg.agent.optimizer.param_groups[1]["lr"] = logger.config.critic_lr
 

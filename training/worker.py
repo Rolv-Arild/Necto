@@ -16,8 +16,8 @@ from rocket_learn.utils.util import ExpandAdvancedObs
 from rocket_learn.agent.pretrained_agents.human_agent import HumanAgent
 
 from training.learner import WORKER_COUNTER
-from training.obs import NectoObsBuilder, NectoObsTEST
-from training.parser import NectoAction, NectoActionTEST
+from training.obs import NectoObsOLD, NectoObsBuilder
+from training.parser import NectoActionOLD, NectoAction
 from training.reward import NectoRewardFunction
 from training.state import NectoStateSetter
 from training.terminal import NectoTerminalCondition, NectoHumanTerminalCondition
@@ -36,10 +36,11 @@ def get_match(r, force_match_size, replay_arrays, game_speed=100, human_match=Fa
         terminals = NectoHumanTerminalCondition
 
     return Match(
-        reward_function=NectoRewardFunction(goal_w=1, team_spirit=0, opponent_punish_w=0, boost_lose_w=0, ),
-        terminal_conditions=terminals(),
-        obs_builder=NectoObsBuilder(),
-        action_parser=NectoActionTEST(),  # NectoActionTEST(),  # KBMAction()
+        # reward_function=NectoRewardFunction(goal_w=1, team_spirit=0., opponent_punish_w=0., boost_lose_w=0),
+        reward_function=NectoRewardFunction(),
+        terminal_conditions=NectoTerminalCondition(),
+        obs_builder=NectoObsBuilder(6),
+        action_parser=NectoAction(),  # NectoActionTEST(),  # KBMAction()
         state_setter=AugmentSetter(NectoStateSetter(replay_arrays[team_size - 1])),
         self_play=True,
         team_size=team_size,
