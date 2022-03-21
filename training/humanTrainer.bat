@@ -7,14 +7,14 @@ if !errorlevel! neq 0 echo git required, download here: https://git-scm.com/down
 if !errorlevel! neq 0 pause & exit
 
 if exist !APPDATA!\bakkesmod\ (
-    echo Bakkesmod located at !APPDATA!\bakkesmod\ 
+    echo Bakkesmod located at !APPDATA!\bakkesmod\
     goto :done
-    
+
 ) else (
-    echo \nBakkesmod not found at !APPDATA!\bakkesmod\ 
+    echo \nBakkesmod not found at !APPDATA!\bakkesmod\
     echo * If you've already installed it elsewhere, you're fine *
     set /p choice=Download Bakkesmod[y/n]?:
-    
+
     if /I "!choice!" EQU "Y" goto :install
     if /I "!choice!" EQU "N" goto :no_install
 )
@@ -24,16 +24,16 @@ if exist !APPDATA!\bakkesmod\ (
     curl.exe -L --output !USERPROFILE!\Downloads\BakkesModSetup.zip --url https://github.com/bakkesmodorg/BakkesModInjectorCpp/releases/latest/download/BakkesModSetup.zip
     tar -xf !USERPROFILE!\Downloads\BakkesModSetup.zip -C !USERPROFILE!\Downloads\
     !USERPROFILE!\Downloads\BakkesModSetup.exe
-    
+
     if !errorlevel! neq 0 echo \n*** Problem with Bakkesmod installation. Manually install and try again ***\n
     if !errorlevel! neq 0 pause & exit /b !errorlevel!
-    
+
     echo Bakkesmod installed!
     goto :done
 
     :no_install
-    goto :done    
-    
+    goto :done
+
     :done
 
 python -m venv !LocalAppData!\necto\venv
@@ -58,16 +58,18 @@ else (
     git pull origin master
 )
 
-set /p helper_name=Enter name: 
-set /p ip=Enter IP address: 
-set /p password=Enter password: 
+set /p helper_name=Enter name:
+set /p ip=Enter IP address:
+set /p password=Enter password:
 
 echo.
-echo #########################
-echo ### Launching Worker! ###
-echo #########################
+echo ##########################
+echo ### Launching Trainer! ###
+echo ###                    ###
+echo ###      Get Ready!    ###
+echo ##########################
 echo.
 
-python worker.py !helper_name! !ip! !password! --compress
+python worker.py !helper_name! !ip! !password! --human_match
 
 pause

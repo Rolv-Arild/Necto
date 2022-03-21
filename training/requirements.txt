@@ -12,5 +12,7 @@ msgpack_numpy==0.4.7.1
 EARL-pytorch==0.5.1
 pillow==8.2.0
 gym==0.18.3
+pygame
+keyboard
 rlgym
 rlgym-tools
