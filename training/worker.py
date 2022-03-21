@@ -13,7 +13,10 @@ from rlgym_tools.extra_state_setters.augment_setter import AugmentSetter
 
 from rocket_learn.rollout_generator.redis_rollout_generator import RedisRolloutWorker, _unserialize
 from rocket_learn.utils.util import ExpandAdvancedObs
-from rocket_learn.agent.pretrained_agents.human_agent import HumanAgent
+try:
+    from rocket_learn.agent.pretrained_agents.human_agent import HumanAgent
+except ImportError:
+    pass
 
 from training.learner import WORKER_COUNTER
 from training.obs import NectoObsOLD, NectoObsBuilder
