@@ -31,7 +31,7 @@ config = dict(
 if __name__ == "__main__":
     from rocket_learn.ppo import PPO
 
-    run_id = "2xpdcuhq"
+    run_id = "1xtehclu"
 
     _, ip, password = sys.argv
     wandb.login(key=os.environ["WANDB_KEY"])
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     )
 
     if run_id is not None:
-        alg.load("ppos/necto_1647513842.6013725/necto_150/checkpoint.pt")
+        alg.load("ppos/necto_1647713101.8911493/necto_1420/checkpoint.pt")
         # alg.agent.optimizer.param_groups[0]["lr"] = logger.config.actor_lr
         # alg.agent.optimizer.param_groups[1]["lr"] = logger.config.critic_lr
 

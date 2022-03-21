@@ -14,18 +14,18 @@ class NectoRewardFunction(RewardFunction):
 
     def __init__(
             self,
-            team_spirit=0.3,
+            team_spirit=0.5,  # 0.3 -> 0.5
             goal_w=10,
             goal_dist_w=10,
             goal_speed_bonus_w=2.5,
             goal_dist_bonus_w=2.5,
             demo_w=5,
-            dist_w=0.75,  # Changed from 1
+            dist_w=0.5,  # 0.75 -> 0.5
             align_w=0.5,
             boost_gain_w=1,
             boost_lose_w=0.5,
             touch_grass_w=0.005,
-            touch_height_w=1,
+            touch_height_w=1,  # 1 -> ~1.1 (changed normalization factor)
             touch_accel_w=0.25,
             opponent_punish_w=1
     ):
@@ -87,7 +87,7 @@ class NectoRewardFunction(RewardFunction):
                 # On ground it gets about 0.04 just for touching, as well as some extra for the speed it produces
                 # Ball is pretty close to z=150 when on top of car, so 1 second of dribbling is 1 reward
                 # Close to 20 in the limit with ball on top, but opponents should learn to challenge way before that
-                player_rewards[i] += self.touch_height_w * state.ball.position[2] / 2250
+                player_rewards[i] += self.touch_height_w * state.ball.position[2] / CEILING_Z
 
                 # Changing speed of ball from standing still to supersonic (~83kph) is 1 reward
                 player_rewards[i] += self.touch_accel_w * norm(curr_vel - last_vel) / CAR_MAX_SPEED
