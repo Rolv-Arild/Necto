@@ -107,7 +107,7 @@ class NectoStateSetter(StateSetter):
             BetterRandom(),
             DefaultState(),
             KickoffLikeSetter(),
-            GoaliePracticeState(aerial_only=True)
+            GoaliePracticeState()
         ]
         self.probs = np.array([replay_prob, random_prob, kickoff_prob, kickofflike_prob, goalie_prob])
         assert self.probs.sum() == 1, "Probabilities must sum to 1"
