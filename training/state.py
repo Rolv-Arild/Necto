@@ -8,7 +8,7 @@ from rlgym.utils.common_values import CAR_MAX_SPEED, SIDE_WALL_X, BACK_WALL_Y, C
 from rlgym.utils.math import rand_vec3
 from rlgym.utils.state_setters import DefaultState, StateWrapper
 
-# from rlgym_utils.extra_state_setters.goalie_state import GoaliePracticeState
+from rlgym_tools.extra_state_setters.goalie_state import GoaliePracticeState
 
 from numpy import random as rand
 from rlgym_tools.extra_state_setters.replay_setter import ReplaySetter
@@ -94,9 +94,10 @@ class NectoStateSetter(StateSetter):
     def __init__(
             self, replay_array, *,
             replay_prob=0.7,
-            random_prob=0.2,
+            random_prob=0.15,
             kickoff_prob=0.05,
-            kickofflike_prob=0.05
+            kickofflike_prob=0.05,
+            goalie_prob=0.05
     ):  # add goalie_prob/shooting/dribbling?
 
         super().__init__()
@@ -106,8 +107,9 @@ class NectoStateSetter(StateSetter):
             BetterRandom(),
             DefaultState(),
             KickoffLikeSetter(),
+            GoaliePracticeState(aerial_only=True)
         ]
-        self.probs = np.array([replay_prob, random_prob, kickoff_prob, kickofflike_prob])
+        self.probs = np.array([replay_prob, random_prob, kickoff_prob, kickofflike_prob, goalie_prob])
         assert self.probs.sum() == 1, "Probabilities must sum to 1"
 
     def reset(self, state_wrapper: StateWrapper):
