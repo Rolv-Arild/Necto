@@ -2,6 +2,13 @@
 REM Using sets inside of ifs annoys windows, this Setlocal fixes that
 Setlocal EnableDelayedExpansion
 
+REM optional argument to launch multiple workers at once
+set instance_num=1
+if %1.==. goto :endparams
+set instance_num=%1
+:endparams
+
+
 WHERE git
 if !errorlevel! neq 0 echo git required, download here: https://git-scm.com/download/win
 if !errorlevel! neq 0 pause & exit
@@ -68,6 +75,9 @@ echo ### Launching Worker! ###
 echo #########################
 echo.
 
-python worker.py !helper_name! !ip! !password! --compress
+for /L %%i in (1, 1, !instance_num!) do (
+    python worker.py !helper_name! !ip! !password! --compress
+    timeout 35 >nul
+)
 
 pause
