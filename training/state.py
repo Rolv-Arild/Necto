@@ -11,6 +11,7 @@ from rlgym.utils.state_setters import DefaultState, StateWrapper
 from rlgym_tools.extra_state_setters.goalie_state import GoaliePracticeState
 
 from numpy import random as rand
+from rlgym_tools.extra_state_setters.hoops_setter import HoopsLikeSetter
 from rlgym_tools.extra_state_setters.replay_setter import ReplaySetter
 from rlgym_tools.extra_state_setters.symmetric_setter import KickoffLikeSetter
 
@@ -94,10 +95,11 @@ class NectoStateSetter(StateSetter):
     def __init__(
             self, replay_array, *,
             replay_prob=0.7,
-            random_prob=0.15,
+            random_prob=0.1,
             kickoff_prob=0.05,
             kickofflike_prob=0.05,
-            goalie_prob=0.05
+            goalie_prob=0.05,
+            hoops_prob=0.05
     ):  # add goalie_prob/shooting/dribbling?
 
         super().__init__()
@@ -107,9 +109,10 @@ class NectoStateSetter(StateSetter):
             BetterRandom(),
             DefaultState(),
             KickoffLikeSetter(),
-            GoaliePracticeState()
+            GoaliePracticeState(first_defender_in_goal=True),
+            HoopsLikeSetter()
         ]
-        self.probs = np.array([replay_prob, random_prob, kickoff_prob, kickofflike_prob, goalie_prob])
+        self.probs = np.array([replay_prob, random_prob, kickoff_prob, kickofflike_prob, goalie_prob, hoops_prob])
         assert self.probs.sum() == 1, "Probabilities must sum to 1"
 
     def reset(self, state_wrapper: StateWrapper):
