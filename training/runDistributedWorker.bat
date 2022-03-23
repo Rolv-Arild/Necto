@@ -76,8 +76,8 @@ echo #########################
 echo.
 
 for /L %%i in (1, 1, !instance_num!) do (
-    python worker.py !helper_name! !ip! !password! --compress
-    timeout 35 >nul
+    start python worker.py !helper_name! !ip! !password! --compress
+    timeout 45 >nul
 )
 
 pause
