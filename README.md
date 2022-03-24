@@ -7,6 +7,8 @@
 This is Necto, the RLGym community bot. It's a bot that's learning to play 1's, 2's, and 3's thanks to RLGym.
 Rocket League is a hard game though so we're all working together to give it the experience it needs.
 
+[Watch Necto win the 2022 RLBot Championship!](https://youtu.be/XVIxZA6gFRI?t=13753)
+
 
 # Can I play against it? 
 
