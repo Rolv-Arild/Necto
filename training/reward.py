@@ -25,7 +25,7 @@ class NectoRewardFunction(RewardFunction):
             boost_gain_w=1,
             boost_lose_w=0.7,  # 0.5 -> 0.7
             touch_grass_w=0.005,
-            touch_height_w=1.2,  # 1 -> ~1.1 (changed normalization factor) -> 1.2
+            touch_height_w=1,  # ~0.9 -> 1 (changed normalization factor) -> 1.2
             touch_accel_w=0.25,
             opponent_punish_w=1
     ):
