@@ -116,6 +116,11 @@ class Necto(BaseAgent):
             self.update_controls(self.action)
             self.update_action = 1
 
+        self.maybe_do_kickoff(packet, ticks_elapsed)
+
+        return self.controls
+
+    def maybe_do_kickoff(self, packet, ticks_elapsed):
         if packet.game_info.is_kickoff_pause:
             if self.kickoff_index >= 0:
                 self.kickoff_index += round(ticks_elapsed)
@@ -148,8 +153,6 @@ class Necto(BaseAgent):
                 self.update_controls(self.action)
         else:
             self.kickoff_index = -1
-
-        return self.controls
 
     def update_controls(self, action):
         self.controls.throttle = action[0]
