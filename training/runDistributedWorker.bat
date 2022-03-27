@@ -2,16 +2,6 @@ REM @echo off
 REM Using sets inside of ifs annoys windows, this Setlocal fixes that
 Setlocal EnableDelayedExpansion
 
-
-for /f %%i in ('call git status --porcelain --untracked-files=no') do set stash=%%i
-if not [%stash%] == [] (
-    echo stashing
-) else (
-    echo empty
-)
-pause
-
-
 REM optional argument to launch multiple workers at once
 set instance_num=1
 if %1.==. goto :endparams
