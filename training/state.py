@@ -9,11 +9,10 @@ from rlgym.utils.math import rand_vec3
 from rlgym.utils.state_setters import DefaultState, StateWrapper
 
 from rlgym_tools.extra_state_setters.goalie_state import GoaliePracticeState
-
-from numpy import random as rand
 from rlgym_tools.extra_state_setters.hoops_setter import HoopsLikeSetter
 from rlgym_tools.extra_state_setters.replay_setter import ReplaySetter
 from rlgym_tools.extra_state_setters.symmetric_setter import KickoffLikeSetter
+from rlgym_tools.extra_state_setters.wall_state import WallPracticeState
 
 LIM_X = SIDE_WALL_X - 1152 / 2 - BALL_RADIUS * 2 ** 0.5
 LIM_Y = BACK_WALL_Y - 1152 / 2 - BALL_RADIUS * 2 ** 0.5
@@ -96,10 +95,11 @@ class NectoStateSetter(StateSetter):
             self, replay_array, *,
             replay_prob=0.7,
             random_prob=0.1,
-            kickoff_prob=0.05,
-            kickofflike_prob=0.05,
-            goalie_prob=0.05,
-            hoops_prob=0.05
+            kickoff_prob=0.04,
+            kickofflike_prob=0.04,
+            goalie_prob=0.04,
+            hoops_prob=0.04,
+            wall_prob=0.04
     ):  # add goalie_prob/shooting/dribbling?
 
         super().__init__()
@@ -110,9 +110,10 @@ class NectoStateSetter(StateSetter):
             DefaultState(),
             KickoffLikeSetter(),
             GoaliePracticeState(first_defender_in_goal=True),
-            HoopsLikeSetter()
+            HoopsLikeSetter(),
+            WallPracticeState()
         ]
-        self.probs = np.array([replay_prob, random_prob, kickoff_prob, kickofflike_prob, goalie_prob, hoops_prob])
+        self.probs = np.array([replay_prob, random_prob, kickoff_prob, kickofflike_prob, goalie_prob, hoops_prob, wall_prob])
         assert self.probs.sum() == 1, "Probabilities must sum to 1"
 
     def reset(self, state_wrapper: StateWrapper):

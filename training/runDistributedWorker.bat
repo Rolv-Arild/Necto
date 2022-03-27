@@ -1,6 +1,16 @@
-@echo off
+REM @echo off
 REM Using sets inside of ifs annoys windows, this Setlocal fixes that
 Setlocal EnableDelayedExpansion
+
+
+for /f %%i in ('call git status --porcelain --untracked-files=no') do set stash=%%i
+if not [%stash%] == [] (
+    echo stashing
+) else (
+    echo empty
+)
+pause
+
 
 REM optional argument to launch multiple workers at once
 set instance_num=1
@@ -59,8 +69,7 @@ if not [%stash%] == [] (
     git checkout master
     git pull origin master
     git stash apply
-)
-else (
+) else (
     git checkout master
     git pull origin master
 )
@@ -76,8 +85,6 @@ echo #########################
 echo.
 
 for /L %%i in (1, 1, !instance_num!) do (
-    start python worker.py !helper_name! !ip! !password! --compress
+    start cmd /c python worker.py !helper_name! !ip! !password! --compress ^& pause
     timeout 45 >nul
 )
-
-pause

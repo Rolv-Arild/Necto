@@ -36,7 +36,7 @@ We're working on it!
 # Can donate my compute to help it learn faster?
 
 If you're interested in offering your compute, first check our discord to see if we need more helpers. Then, make sure you have downloaded:
-- Rocket League
+- Rocket League (Epic version is required)
 - bakkesmod
 - python >=3.8
 - git
