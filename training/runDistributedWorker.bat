@@ -1,4 +1,4 @@
-REM @echo off
+@echo off
 REM Using sets inside of ifs annoys windows, this Setlocal fixes that
 Setlocal EnableDelayedExpansion
 
