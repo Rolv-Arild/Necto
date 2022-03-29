@@ -59,8 +59,7 @@ if not [%stash%] == [] (
     git checkout master
     git pull origin master
     git stash apply
-)
-else (
+) else (
     git checkout master
     git pull origin master
 )
@@ -76,8 +75,6 @@ echo #########################
 echo.
 
 for /L %%i in (1, 1, !instance_num!) do (
-    start python worker.py !helper_name! !ip! !password! --compress
+    start cmd /c python worker.py !helper_name! !ip! !password! --compress ^& pause
     timeout 45 >nul
 )
-
-pause
