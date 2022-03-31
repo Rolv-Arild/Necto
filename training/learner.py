@@ -47,7 +47,8 @@ if __name__ == "__main__":
                                         # lambda: NectoRewardFunction(goal_w=1, team_spirit=0., opponent_punish_w=0., boost_lose_w=0),
                                         NectoAction,
                                         save_every=logger.config.iterations_per_save,
-                                        logger=logger, clear=run_id is None)
+                                        logger=logger, clear=run_id is None,
+                                        max_age=1)
 
     agent = get_agent(actor_lr=logger.config.actor_lr, critic_lr=logger.config.critic_lr)
 
@@ -64,7 +65,7 @@ if __name__ == "__main__":
     )
 
     if run_id is not None:
-        alg.load("ppos/necto_1647713101.8911493/necto_1420/checkpoint.pt")
+        alg.load("ppos/necto_1648680602.1357858/necto_5920/checkpoint.pt")
         # alg.agent.optimizer.param_groups[0]["lr"] = logger.config.actor_lr
         # alg.agent.optimizer.param_groups[1]["lr"] = logger.config.critic_lr
 
