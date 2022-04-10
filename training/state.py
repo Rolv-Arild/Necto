@@ -94,12 +94,12 @@ class NectoStateSetter(StateSetter):
     def __init__(
             self, replay_array, *,
             replay_prob=0.7,
-            random_prob=0.1,
+            random_prob=0.08,
             kickoff_prob=0.04,
             kickofflike_prob=0.04,
-            goalie_prob=0.04,
+            goalie_prob=0.05,
             hoops_prob=0.04,
-            wall_prob=0.04
+            wall_prob=0.05
     ):  # add goalie_prob/shooting/dribbling?
 
         super().__init__()
@@ -109,7 +109,7 @@ class NectoStateSetter(StateSetter):
             BetterRandom(),
             DefaultState(),
             KickoffLikeSetter(),
-            GoaliePracticeState(first_defender_in_goal=True),
+            GoaliePracticeState(first_defender_in_goal=False, allow_enemy_interference=True),
             HoopsLikeSetter(),
             WallPracticeState()
         ]
