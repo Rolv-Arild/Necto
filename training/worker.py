@@ -27,8 +27,10 @@ from training.terminal import NectoTerminalCondition, NectoHumanTerminalConditio
 
 
 def get_match(r, force_match_size, replay_arrays, game_speed=100, human_match=False):
-    order = (1, 2, 3, 1, 1, 2, 1, 1, 3, 2, 1)  # Close as possible number of agents
+    # order = (1, 2, 3, 1, 1, 2, 1, 1, 3, 2, 1)  # Close as possible number of agents
     # order = (1, 1, 2, 1, 1, 2, 3, 1, 1, 2, 3)  # Close as possible with 1s >= 2s >= 3s
+    # After testing, this seems like a more accurate distribution
+    order = (1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1, 2, 1, 3, 1, 2, 3, 1, 2, 1, 3, 1, 2, 1, 3, 2, 1, 3, 2, 1, 1, 3, 2)
     # order = (1,)
     team_size = order[r % len(order)]
     if force_match_size:
@@ -88,7 +90,9 @@ def make_worker(host, name, password, limit_threads=True, send_gamestates=False,
                               send_gamestates=send_gamestates,
                               streamer_mode=is_streamer,
                               pretrained_agents=agents,
-                              human_agent=human)
+                              human_agent=human,
+                              sigma_target=0.5,
+                              deterministic_old_prob=0.75)
 
 
 def main():
