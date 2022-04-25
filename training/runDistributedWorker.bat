@@ -4,9 +4,16 @@ Setlocal EnableDelayedExpansion
 
 REM optional argument to launch multiple workers at once
 set instance_num=1
-if %1.==. goto :endparams
-set instance_num=%1
-:endparams
+set tending=0
+
+REM go through arguments
+for %%a in (%*) do (
+    REM check for tending flag
+    if "%%a"=="\t" set tending=1
+
+    REM check for instance number (positive integers)
+    if 1%%a EQU +1%%a set instance_num=%%a
+)
 
 
 WHERE git
@@ -27,25 +34,25 @@ if exist !APPDATA!\bakkesmod\ (
 )
 
     :install
-    echo Downloading Bakkesmod
-    curl.exe -L --output !USERPROFILE!\Downloads\BakkesModSetup.zip --url https://github.com/bakkesmodorg/BakkesModInjectorCpp/releases/latest/download/BakkesModSetup.zip
-    tar -xf !USERPROFILE!\Downloads\BakkesModSetup.zip -C !USERPROFILE!\Downloads\
-    !USERPROFILE!\Downloads\BakkesModSetup.exe
-    
-    if !errorlevel! neq 0 echo \n*** Problem with Bakkesmod installation. Manually install and try again ***\n
-    if !errorlevel! neq 0 pause & exit /b !errorlevel!
-    
-    echo Bakkesmod installed!
-    goto :done
+echo Downloading Bakkesmod
+curl.exe -L --output !USERPROFILE!\Downloads\BakkesModSetup.zip --url https://github.com/bakkesmodorg/BakkesModInjectorCpp/releases/latest/download/BakkesModSetup.zip
+tar -xf !USERPROFILE!\Downloads\BakkesModSetup.zip -C !USERPROFILE!\Downloads\
+!USERPROFILE!\Downloads\BakkesModSetup.exe
 
-    :no_install
-    goto :done    
+if !errorlevel! neq 0 echo \n*** Problem with Bakkesmod installation. Manually install and try again ***\n
+if !errorlevel! neq 0 pause & exit /b !errorlevel!
+
+echo Bakkesmod installed!
+goto :done
+
+:no_install
+goto :done
     
     :done
 
 python -m venv !LocalAppData!\necto\venv
 
-CALL  !LocalAppData!\necto\venv\Scripts\activate.bat
+CALL !LocalAppData!\necto\venv\Scripts\activate.bat
 
 python -m pip install -U git+https://github.com/Rolv-Arild/rocket-learn.git
 python -m pip install -U -r requirements.txt -f https://download.pytorch.org/whl/torch_stable.html
@@ -64,9 +71,9 @@ if not [%stash%] == [] (
     git pull origin master
 )
 
-set /p helper_name=Enter name: 
-set /p ip=Enter IP address: 
-set /p password=Enter password: 
+set /p helper_name=Enter name:
+set /p ip=Enter IP address:
+set /p password=Enter password:
 
 echo.
 echo #########################
@@ -74,7 +81,37 @@ echo ### Launching Worker! ###
 echo #########################
 echo.
 
+
+    :process_launch
+set process_list=
 for /L %%i in (1, 1, !instance_num!) do (
-    start cmd /c python worker.py !helper_name! !ip! !password! --compress ^& pause
+    set title=NectoWorker_%%i
+    set process_list=!process_list!;!title!
+
+    REM launch workers in new cmd to make tracking errors easier
+    start "!title!" cmd /c python worker.py !helper_name! !ip! !password! --compress ^& pause
     timeout 45 >nul
 )
+
+REM if we tend, wait, then close and do it all over again
+if !tending! EQU 1 (
+    REM 12 hours in seconds
+    timeout 443200 >nul
+
+    echo Closing worker instances
+    REM kill processes and relaunch
+    for %%i in (!process_list!) do (
+        echo %%i
+        taskkill /FI "WindowTitle eq %%i" /T /F
+        timeout 1 >nul
+    )
+
+    REM double check that all rocket league instances are killed
+    taskkill /FI "WindowTitle eq Rocket*" /T /F
+
+    echo Closed. Waiting 5 minutes to ensure proper teardown.
+    timeout 300 >nul
+    echo Relaunching worker instances.
+    goto :process_launch
+)
+
