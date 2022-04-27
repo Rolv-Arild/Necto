@@ -17,14 +17,14 @@ WORKER_COUNTER = "worker-counter"
 
 config = dict(
     seed=123,
-    actor_lr=1e-4,
-    critic_lr=1e-4,
-    n_steps=1_000_000,
-    batch_size=100_000,
+    actor_lr=1e-5,
+    critic_lr=1e-5,
+    n_steps=2_000_000,
+    batch_size=200_000,
     minibatch_size=20_000,
     epochs=30,
     gamma=0.995,
-    iterations_per_save=10,
+    iterations_per_save=5,
     ent_coef=0.01,
 )
 
@@ -48,7 +48,7 @@ if __name__ == "__main__":
                                         NectoAction,
                                         save_every=logger.config.iterations_per_save,
                                         logger=logger, clear=run_id is None,
-                                        max_age=1)
+                                        max_age=1, min_sigma=2)
 
     agent = get_agent(actor_lr=logger.config.actor_lr, critic_lr=logger.config.critic_lr)
 
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     )
 
     if run_id is not None:
-        alg.load("ppos/necto_1649207663.440756/necto_9080/checkpoint.pt")
+        alg.load("ppos/necto_1650925989.9770436/necto_13755/checkpoint.pt")
         # alg.agent.optimizer.param_groups[0]["lr"] = logger.config.actor_lr
         # alg.agent.optimizer.param_groups[1]["lr"] = logger.config.critic_lr
 
