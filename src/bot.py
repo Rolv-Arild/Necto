@@ -7,20 +7,60 @@ from rlgym_compat import GameState
 from agent import Agent
 from necto_obs import NectoObsBuilder
 
-KICKOFF_CONTROLS = (
-        11 * 4 * [SimpleControllerState(throttle=1, boost=True)]
-        + 4 * 4 * [SimpleControllerState(throttle=1, boost=True, steer=-1)]
+KICKOFF_CONTROLS_CENTER = (
+        18 * 4 * [SimpleControllerState(throttle=1, boost=True)]
+        + 4 * 4 * [SimpleControllerState(throttle=1, boost=True, steer=-0.8)]
         + 2 * 4 * [SimpleControllerState(throttle=1, jump=True, boost=True)]
         + 1 * 4 * [SimpleControllerState(throttle=1, boost=True)]
-        + 1 * 4 * [SimpleControllerState(throttle=1, yaw=0.8, pitch=-0.7, jump=True, boost=True)]
-        + 13 * 4 * [SimpleControllerState(throttle=1, pitch=1, boost=True)]
-        + 10 * 4 * [SimpleControllerState(throttle=1, roll=1, pitch=0.5)]
+        + 1 * 4 * [SimpleControllerState(throttle=1, roll=1, pitch=-1, jump=True, boost=True)]
+        + 12 * 4 * [SimpleControllerState(throttle=1, roll=1, yaw=1, pitch=1, boost=True)]
+        + 12 * 4 * [SimpleControllerState(throttle=1, roll=1, yaw=1, pitch=1)]
+        + 4 * 4 * [SimpleControllerState(throttle=1)]
 )
 
-KICKOFF_NUMPY = np.array([
-    [scs.throttle, scs.steer, scs.pitch, scs.yaw, scs.roll, scs.jump, scs.boost, scs.handbrake]
-    for scs in KICKOFF_CONTROLS
-])
+KICKOFF_CONTROLS_LEFT_CORNER = (
+        3 * 4 * [SimpleControllerState(throttle=1, boost=True, steer=1)]
+        + 11 * 4 * [SimpleControllerState(throttle=1, boost=True)]
+        + 2 * 4 * [SimpleControllerState(throttle=1, jump=True, boost=True)]
+        + 1 * 4 * [SimpleControllerState(throttle=1, boost=True)]
+        + 1 * 4 * [SimpleControllerState(throttle=1, roll=-1, pitch=-1, jump=True, boost=True)]
+        + 16 * 4 * [SimpleControllerState(throttle=1, roll=-1, yaw=-1, pitch=1, boost=True)]
+        + 8 * 4 * [SimpleControllerState(throttle=1, roll=-1, yaw=-1, pitch=1)]
+        + 6 * 4 * [SimpleControllerState(throttle=1)]
+)
+
+KICKOFF_CONTROLS_RIGHT_CORNER = (
+        3 * 4 * [SimpleControllerState(throttle=1, boost=True, steer=-1)]
+        + 11 * 4 * [SimpleControllerState(throttle=1, boost=True)]
+        + 2 * 4 * [SimpleControllerState(throttle=1, jump=True, boost=True)]
+        + 1 * 4 * [SimpleControllerState(throttle=1, boost=True)]
+        + 1 * 4 * [SimpleControllerState(throttle=1, roll=1, pitch=-1, jump=True, boost=True)]
+        + 16 * 4 * [SimpleControllerState(throttle=1, roll=1, yaw=1, pitch=1, boost=True)]
+        + 8 * 4 * [SimpleControllerState(throttle=1, roll=1, yaw=1, pitch=1)]
+        + 6 * 4 * [SimpleControllerState(throttle=1)]
+)
+
+KICKOFF_CONTROLS_BACK_LEFT = (
+        6 * 4 * [SimpleControllerState(throttle=1, boost=True, steer=0.86)]
+        + 12 * 4 * [SimpleControllerState(throttle=1, boost=True)]
+        + 2 * 4 * [SimpleControllerState(throttle=1, jump=True, boost=True)]
+        + 1 * 4 * [SimpleControllerState(throttle=1, boost=True)]
+        + 1 * 4 * [SimpleControllerState(throttle=1, roll=-1, pitch=-1, jump=True, boost=True)]
+        + 14 * 4 * [SimpleControllerState(throttle=1, roll=-1, yaw=-1, pitch=1, boost=True)]
+        + 10 * 4 * [SimpleControllerState(throttle=1, roll=-1, yaw=-1, pitch=1)]
+        + 6 * 4 * [SimpleControllerState(throttle=1)]
+)
+
+KICKOFF_CONTROLS_BACK_RIGHT = (
+        6 * 4 * [SimpleControllerState(throttle=1, boost=True, steer=-0.86)]
+        + 12 * 4 * [SimpleControllerState(throttle=1, boost=True)]
+        + 2 * 4 * [SimpleControllerState(throttle=1, jump=True, boost=True)]
+        + 1 * 4 * [SimpleControllerState(throttle=1, boost=True)]
+        + 1 * 4 * [SimpleControllerState(throttle=1, roll=1, pitch=-1, jump=True, boost=True)]
+        + 14 * 4 * [SimpleControllerState(throttle=1, roll=1, yaw=1, pitch=1, boost=True)]
+        + 10 * 4 * [SimpleControllerState(throttle=1, roll=1, yaw=1, pitch=1)]
+        + 6 * 4 * [SimpleControllerState(throttle=1)]
+)
 
 
 class Necto(BaseAgent):
@@ -42,6 +82,7 @@ class Necto(BaseAgent):
         self.ticks = 0
         self.prev_time = 0
         self.kickoff_index = -1
+        self.kickoff_numpy = None
         print('Necto Ready - Index:', index)
 
     def initialize_agent(self):
@@ -55,6 +96,7 @@ class Necto(BaseAgent):
         self.action = np.zeros(8)
         self.update_action = True
         self.kickoff_index = -1
+        self.kickoff_numpy = None
 
     def render_attention_weights(self, weights, obs):
         mean_weights = torch.mean(torch.stack(weights), dim=0).numpy()[0][0]
@@ -145,10 +187,25 @@ class Necto(BaseAgent):
                                 is_kickoff_taker = False  # Left goes
 
                 self.kickoff_index = 0 if is_kickoff_taker else -2
+                
+                kickoff_controls = KICKOFF_CONTROLS_CENTER
+                if positions[self.index, 0] < -2000:
+                    kickoff_controls = KICKOFF_CONTROLS_LEFT_CORNER if self.team else KICKOFF_CONTROLS_RIGHT_CORNER
+                elif positions[self.index, 0] > 2000:
+                    kickoff_controls = KICKOFF_CONTROLS_RIGHT_CORNER if self.team else KICKOFF_CONTROLS_LEFT_CORNER
+                elif positions[self.index, 0] < -200:
+                    kickoff_controls = KICKOFF_CONTROLS_BACK_LEFT if self.team else KICKOFF_CONTROLS_BACK_RIGHT
+                elif positions[self.index, 0] > 200:
+                    kickoff_controls = KICKOFF_CONTROLS_BACK_RIGHT if self.team else KICKOFF_CONTROLS_BACK_LEFT
+                    
+                self.kickoff_numpy = np.array([
+                    [scs.throttle, scs.steer, scs.pitch, scs.yaw, scs.roll, scs.jump, scs.boost, scs.handbrake]
+                    for scs in kickoff_controls
+                ])
 
-            if 0 <= self.kickoff_index < len(KICKOFF_NUMPY) \
+            if 0 <= self.kickoff_index < len(self.kickoff_numpy) \
                     and packet.game_ball.physics.location.y == 0:
-                action = KICKOFF_NUMPY[self.kickoff_index]
+                action = self.kickoff_numpy[self.kickoff_index]
                 self.action = action
                 self.update_controls(self.action)
         else:
