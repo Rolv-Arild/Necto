@@ -113,7 +113,7 @@ class NectoStateSetter(StateSetter):
         super().__init__()
         # self.redis = redis
         self.setters = [
-            ReplaySetter(replay_array),
+            NectoReplaySetter(replay_array),
             BetterRandom(),
             DefaultState(),
             KickoffLikeSetter(),
