@@ -16,3 +16,4 @@ pygame
 keyboard
 rlgym
 rlgym-tools
+numba

@@ -15,13 +15,13 @@ from training.parser import NectoAction
 
 
 class ControlsPredictorDot(nn.Module):
-    def __init__(self, in_features, features=32, layers=2, actions=None):
+    def __init__(self, in_features, features=32, layers=1, actions=None):
         super().__init__()
         if actions is None:
             self.actions = torch.from_numpy(NectoAction.make_lookup_table()).float()
         else:
             self.actions = torch.from_numpy(actions).float()
-        self.net = mlp(8, features, layers)
+        self.net = mlp(8, in_features, layers, features)  # Default 8->256->32
         self.emb_convertor = nn.Linear(in_features, features)
 
     def forward(self, player_emb: torch.Tensor, actions: Optional[torch.Tensor] = None):
@@ -31,8 +31,6 @@ class ControlsPredictorDot(nn.Module):
         act_emb = self.net(actions.to(player_emb.device))
 
         if act_emb.ndim == 2:
-            # actions = actions.unsqueeze(0).repeat(player_emb.shape[0], 1, 1)
-
             return torch.einsum("ad,bpd->bpa", act_emb, player_emb)
 
         return torch.einsum("bad,bpd->bpa", act_emb, player_emb)
@@ -55,17 +53,24 @@ class Necto(nn.Module):  # Wraps earl + an output and takes only a single input
     def forward(self, inp):
         q, kv, m = inp
         res = self.earl(q, kv, m)
+        weights = None
+        if isinstance(res, tuple):
+            res, weights = res
         res = self.output(self.relu(res))
         if isinstance(res, tuple):
-            return tuple(r[:, 0, :] for r in res)
-        return res[:, 0, :]
+            res = tuple(r[:, 0, :] for r in res)
+        else:
+            res = res[:, 0, :]
+        if weights is None:
+            return res
+        return res, weights
 
 
 def get_critic():
     # return DiscretePolicy(
     #     Sequential(Linear(107, 128), Linear(128, 128), Linear(128, 128), Linear(128, 1)))
-    return Necto(EARLPerceiver(128, 2, 4, 1, query_features=32, key_value_features=24),
-                 Linear(128, 1))
+    return Necto(EARLPerceiver(256, 4, 8, 1, query_features=32, key_value_features=24 + 25),
+                 Linear(256, 1))
 
 
 def get_actor():
@@ -73,8 +78,8 @@ def get_actor():
     # return DiscretePolicy(
     #     Sequential(Linear(107, 128), Linear(128, 128), Linear(128, 128), ControlsPredictorDiscrete(128, split)), split)
     split = (90,)
-    return DiscretePolicy(Necto(EARLPerceiver(128, 2, 4, 1, query_features=32, key_value_features=24),
-                                ControlsPredictorDot(128)), split)
+    return DiscretePolicy(Necto(EARLPerceiver(256, 4, 8, 1, query_features=32, key_value_features=24 + 25),
+                                ControlsPredictorDot(256)), split)
 
 
 def get_agent(actor_lr, critic_lr=None):

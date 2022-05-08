@@ -33,6 +33,8 @@ GOAL_LINE = 5100
 
 YAW_MAX = np.pi
 
+EXPERIENCE_COUNTER_KEY = "experience_counter"
+
 
 class BetterRandom(StateSetter):  # Random state with some triangular distributions
     def __init__(self):
@@ -89,6 +91,13 @@ class BetterRandom(StateSetter):  # Random state with some triangular distributi
 #             x=np.random.uniform(-LIM_X, LIM_X)
 #         )
 
+class NectoReplaySetter(ReplaySetter):
+    def generate_probabilities(self):
+        ball_heights = self.states[:, 2]
+        player_heights = self.states[:, 9 + 2::13]
+        weights = 1 + (ball_heights + player_heights.sum(axis=-1)) / CEILING_Z
+        return weights / weights.sum()
+
 
 class NectoStateSetter(StateSetter):
     def __init__(
@@ -101,9 +110,8 @@ class NectoStateSetter(StateSetter):
             hoops_prob=0.04,
             wall_prob=0.05
     ):  # add goalie_prob/shooting/dribbling?
-
         super().__init__()
-
+        # self.redis = redis
         self.setters = [
             ReplaySetter(replay_array),
             BetterRandom(),
@@ -113,9 +121,13 @@ class NectoStateSetter(StateSetter):
             HoopsLikeSetter(),
             WallPracticeState()
         ]
-        self.probs = np.array([replay_prob, random_prob, kickoff_prob, kickofflike_prob, goalie_prob, hoops_prob, wall_prob])
+        self.probs = np.array(
+            [replay_prob, random_prob, kickoff_prob, kickofflike_prob, goalie_prob, hoops_prob, wall_prob])
         assert self.probs.sum() == 1, "Probabilities must sum to 1"
 
     def reset(self, state_wrapper: StateWrapper):
+        # counts = self.redis.hgetall(EXPERIENCE_COUNTER_KEY)
+        # gamemode = int(min(counts, key=counts.get)[:1])
+        # # FIXME: Generate state wrapper from gamemode
         i = np.random.choice(len(self.setters), p=self.probs)
         self.setters[i].reset(state_wrapper)

@@ -1,26 +1,22 @@
-import sys
-from distutils.util import strtobool
 import argparse
+import random
+import sys
 
 import torch
 from redis import Redis
 from rlgym.envs import Match
-from rlgym.utils.action_parsers import DiscreteAction
-from rlgym.utils.reward_functions.common_rewards import ConstantReward
-from rlgym_tools.extra_action_parsers.kbm_act import KBMAction
 from rlgym_tools.extra_state_setters.augment_setter import AugmentSetter
 
+from rocket_learn.rollout_generator.redis.redis_rollout_worker import RedisRolloutWorker
+from rocket_learn.rollout_generator.redis.utils import _unserialize
 
-from rocket_learn.rollout_generator.redis_rollout_generator import RedisRolloutWorker, _unserialize
-from rocket_learn.utils.util import ExpandAdvancedObs
 try:
     from rocket_learn.agent.pretrained_agents.human_agent import HumanAgent
 except ImportError:
     pass
 
-from training.learner import WORKER_COUNTER
-from training.obs import NectoObsOLD, NectoObsBuilder
-from training.parser import NectoActionOLD, NectoAction
+from training.obs import NectoObsBuilder
+from training.parser import NectoAction
 from training.reward import NectoRewardFunction
 from training.state import NectoStateSetter
 from training.terminal import NectoTerminalCondition, NectoHumanTerminalCondition
@@ -31,8 +27,9 @@ def get_match(r, force_match_size, replay_arrays, game_speed=100, human_match=Fa
     # order = (1, 1, 2, 1, 1, 2, 3, 1, 1, 2, 3)  # Close as possible with 1s >= 2s >= 3s
     # After testing, this seems like a more accurate distribution
     order = (1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1, 2, 1, 3, 1, 2, 3, 1, 2, 1, 3, 1, 2, 1, 3, 2, 1, 3, 2, 1, 1, 3, 2)
+
     # order = (1,)
-    team_size = order[r % len(order)]
+    team_size = random.choice(order)  # order[r % len(order)]
     if force_match_size:
         team_size = force_match_size
 
@@ -58,7 +55,6 @@ def make_worker(host, name, password, limit_threads=True, send_gamestates=False,
     if limit_threads:
         torch.set_num_threads(1)
     r = Redis(host=host, password=password)
-    w = r.incr(WORKER_COUNTER) - 1
 
     agents = None
     human = None
@@ -81,7 +77,7 @@ def make_worker(host, name, password, limit_threads=True, send_gamestates=False,
     replay_arrays = _unserialize(r.get("replay-arrays"))
 
     return RedisRolloutWorker(r, name,
-                              match=get_match(w, force_match_size,
+                              match=get_match(r, force_match_size,
                                               game_speed=game_speed,
                                               replay_arrays=replay_arrays,
                                               human_match=human_match),
@@ -90,9 +86,7 @@ def make_worker(host, name, password, limit_threads=True, send_gamestates=False,
                               send_gamestates=send_gamestates,
                               streamer_mode=is_streamer,
                               pretrained_agents=agents,
-                              human_agent=human,
-                              sigma_target=0.5,
-                              deterministic_old_prob=0.75)
+                              human_agent=human)
 
 
 def main():

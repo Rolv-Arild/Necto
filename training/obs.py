@@ -1,6 +1,7 @@
 from typing import Any
 
 import numpy as np
+from numba import njit
 from rlgym.utils import ObsBuilder
 from rlgym.utils.action_parsers import DefaultAction
 from rlgym.utils.common_values import BOOST_LOCATIONS, BLUE_TEAM, ORANGE_TEAM
@@ -132,14 +133,16 @@ LIN_VEL = slice(8, 11)
 FW = slice(11, 14)
 UP = slice(14, 17)
 ANG_VEL = slice(17, 20)
+# BOOST, DEMO, ON_GROUND, HAS_FLIP, HAS_JUMP = range(20, 25)
+# ACTIONS = range(25, 33)
 BOOST, DEMO, ON_GROUND, HAS_FLIP = range(20, 24)
 ACTIONS = range(24, 32)
 
 
 class NectoObsBuilder(BatchedObsBuilder):
     _boost_locations = np.array(BOOST_LOCATIONS)
-    _invert = np.array([1] * 5 + [-1, -1, 1] * 5 + [1] * 4)
-    _norm = np.array([1.] * 5 + [2300] * 6 + [1] * 6 + [5.5] * 3 + [1] * 4)
+    _invert = np.array([1] * 5 + [-1, -1, 1] * 5 + [1] * 4 + [1] * 25)
+    _norm = np.array([1.] * 5 + [2300] * 6 + [1] * 6 + [5.5] * 3 + [1, 10, 1, 1] + [1] * 25)
 
     def __init__(self, n_players=None, tick_skip=8):
         super().__init__()
@@ -154,37 +157,6 @@ class NectoObsBuilder(BatchedObsBuilder):
     def _reset(self, initial_state: GameState):
         self.demo_timers = np.zeros(len(initial_state.players))
         self.boost_timers = np.zeros(len(initial_state.boost_pads))
-        # self.current_state = initial_state
-
-    #     def encode_gamestate(state: GameState):
-    #     state_vals = [0, state.blue_score, state.orange_score]
-    #     state_vals += state.boost_pads.tolist()
-    #
-    #     for bd in (state.ball, state.inverted_ball):
-    #         state_vals += bd.position.tolist()
-    #         state_vals += bd.linear_velocity.tolist()
-    #         state_vals += bd.angular_velocity.tolist()
-    #
-    #     for p in state.players:
-    #         state_vals += [p.car_id, p.team_num]
-    #         for cd in (p.car_data, p.inverted_car_data):
-    #             state_vals += cd.position.tolist()
-    #             state_vals += cd.quaternion.tolist()
-    #             state_vals += cd.linear_velocity.tolist()
-    #             state_vals += cd.angular_velocity.tolist()
-    #         state_vals += [
-    #             p.match_goals,
-    #             p.match_saves,
-    #             p.match_shots,
-    #             p.match_demolishes,
-    #             p.boost_pickups,
-    #             p.is_demoed,
-    #             p.on_ground,
-    #             p.ball_touched,
-    #             p.has_flip,
-    #             p.boost_amount
-    #         ]
-    #     return state_vals
 
     @staticmethod
     def _quats_to_rot_mtx(quats: np.ndarray) -> np.ndarray:
@@ -226,8 +198,8 @@ class NectoObsBuilder(BatchedObsBuilder):
 
     @staticmethod
     def convert_to_relative(q, kv):
-        # kv[..., POS.start:LIN_VEL.stop] -= q[..., POS.start:LIN_VEL.stop]
-        kv[..., POS] -= q[..., POS]
+        kv[..., POS.start:LIN_VEL.stop] -= q[..., POS.start:LIN_VEL.stop]
+        # kv[..., POS] -= q[..., POS]
         forward = q[..., FW]
         theta = np.arctan2(forward[..., 0], forward[..., 1])
         theta = np.expand_dims(theta, axis=-1)
@@ -241,6 +213,79 @@ class NectoObsBuilder(BatchedObsBuilder):
         kv[..., POS.start:ANG_VEL.stop:3] = nx  # x-components
         kv[..., POS.start + 1:ANG_VEL.stop:3] = ny  # y-components
 
+    @staticmethod
+    def add_relative_components(q, kv):
+        forward = q[..., FW]
+        up = q[..., UP]
+        left = np.cross(up, forward)
+
+        pitch = np.arctan2(forward[..., 2], np.sqrt(forward[..., 0] ** 2 + forward[..., 1] ** 2))
+        yaw = np.arctan2(forward[..., 1], forward[..., 0])
+        roll = np.arctan2(left[..., 2], up[..., 2])
+
+        pitch = np.expand_dims(pitch, axis=-1)
+        yaw = np.expand_dims(yaw, axis=-1)
+        roll = np.expand_dims(roll, axis=-1)
+
+        cr = np.cos(roll)
+        sr = np.sin(roll)
+        cp = np.cos(pitch)
+        sp = np.sin(pitch)
+        cy = np.cos(yaw)
+        sy = np.sin(yaw)
+
+        # Each of these holds 5 values for each player for each tick
+        vals = kv[..., POS.start:ANG_VEL.stop]
+        vals[..., POS.start:LIN_VEL.stop] -= q[..., POS.start:LIN_VEL.stop]
+        xs = vals[..., 0::3]
+        ys = vals[..., 1::3]
+        zs = vals[..., 2::3]
+
+        # Rotation matrix with only yaw
+        flip_relative_xs = cy * xs - sy * ys
+        flip_relative_ys = sy * xs + cy * ys
+        flip_relative_zs = zs
+
+        # Now full rotation matrix
+        car_relative_xs = cp * cy * xs + (sr * sp * cy - cr * sy) * ys - (cr * sp * cy + sr * sy) * zs
+        car_relative_ys = cp * sy * xs + (sr * sp * sy + cr * cy) * ys - (cr * sp * sy - sr * cy) * zs
+        car_relative_zs = sp * xs - cp * sr * ys + cp * cr * zs
+
+        all_rows = np.concatenate(
+            (flip_relative_xs, flip_relative_ys, flip_relative_zs,
+             car_relative_xs, car_relative_ys, car_relative_zs), axis=-1)
+        kv[..., ACTIONS.start:] = all_rows
+
+    @staticmethod
+    @njit
+    def _update_timers(self_boost_timers, self_boost_locations, self_demo_timers, self_tick_skip,
+                       boost_states: np.ndarray, demo_states: np.ndarray):
+        boost_timers = np.zeros((boost_states.shape[0] + 1, boost_states.shape[1]))
+        boost_timers[0, :] = self_boost_timers
+
+        for i in range(1, boost_timers.shape[0]):
+            for b in range(boost_timers.shape[1]):
+                if boost_states[i, b] == 0:
+                    if self_boost_locations[b, 2] > 72:
+                        boost_timers[i, b] = 10
+                    else:
+                        boost_timers[i, b] = 4
+                elif i - 1 >= 0 and boost_timers[i - 1, b] > 0:
+                    boost_timers[i, b] = max(0, boost_timers[i - 1, b] - self_tick_skip / 120)
+        # self.boost_timers = boost_timers[-1, :]
+
+        demo_timers = np.zeros((demo_states.shape[0] + 1, demo_states.shape[1]))
+        demo_timers[0, :] = self_demo_timers
+        for i in range(1, demo_timers.shape[0]):
+            for b in range(demo_timers.shape[1]):
+                if demo_states[i, b] == 1:
+                    demo_timers[i, b] = 3
+                elif i - 1 >= 0 and demo_timers[i - 1, b] > 0:
+                    demo_timers[i, b] = max(0, demo_timers[i - 1, b] - self_tick_skip / 120)
+        # self.demo_timers = demo_timers[-1, :]
+
+        return boost_timers[1:], demo_timers[1:]
+
     def batched_build_obs(self, encoded_states: np.ndarray):
         ball_start_index = 3 + GameState.BOOST_PADS_LENGTH
         players_start_index = ball_start_index + GameState.BALL_STATE_LENGTH
@@ -248,7 +293,14 @@ class NectoObsBuilder(BatchedObsBuilder):
 
         n_players = (encoded_states.shape[1] - players_start_index) // player_length
         lim_players = n_players if self.n_players is None else self.n_players
-        n_entities = lim_players + 1 + 34
+        n_entities = lim_players + 1 + 34  # Includes player+ball+boosts
+
+        boost_timers, demo_timers = self._update_timers(self.boost_timers, self._boost_locations,
+                                                        self.demo_timers, self.tick_skip,
+                                                        encoded_states[:, 3:3 + 34],
+                                                        encoded_states[:, players_start_index + 33::player_length])
+        self.boost_timers = boost_timers[-1, :]
+        self.demo_timers = demo_timers[-1, :]
 
         # SELECTORS
         sel_players = slice(0, lim_players)
@@ -257,7 +309,7 @@ class NectoObsBuilder(BatchedObsBuilder):
 
         # MAIN ARRAYS
         q = np.zeros((n_players, encoded_states.shape[0], 1, 32))
-        kv = np.zeros((n_players, encoded_states.shape[0], n_entities, 24))  # Keys and values are (mostly) shared
+        kv = np.zeros((n_players, encoded_states.shape[0], n_entities, 24 + 25))
         m = np.zeros((n_players, encoded_states.shape[0], n_entities))  # Mask is shared
 
         # BALL
@@ -265,10 +317,12 @@ class NectoObsBuilder(BatchedObsBuilder):
         kv[:, :, sel_ball, np.r_[POS, LIN_VEL, ANG_VEL]] = encoded_states[:, ball_start_index: ball_start_index + 9]
 
         # BOOSTS
+        # big_boost_mask = self._boost_locations[:, 2] > 72
         kv[:, :, sel_boosts, IS_BOOST] = 1
-        kv[:, :, sel_boosts, POS] = self._boost_locations
-        kv[:, :, sel_boosts, BOOST] = 0.12 + 0.88 * (self._boost_locations[:, 2] > 72)
-        kv[:, :, sel_boosts, DEMO] = encoded_states[:, 3:3 + 34]  # FIXME boost timer
+        kv[:, :, sel_boosts, POS] = self._boost_locations  # [big_boost_mask]
+        kv[:, :, sel_boosts, BOOST] = 1
+        kv[:, :, sel_boosts, DEMO] = boost_timers  # [:, big_boost_mask]
+        # q[:, :, ACTIONS.stop:] = boost_timers[:, ~big_boost_mask]
 
         # PLAYERS
         teams = encoded_states[0, players_start_index + 1::player_length]
@@ -287,9 +341,12 @@ class NectoObsBuilder(BatchedObsBuilder):
             kv[:, :, i, UP] = rot_mtx[:, :, 2]
             kv[:, :, i, ANG_VEL] = encoded_player[:, 12: 15]
             kv[:, :, i, BOOST] = encoded_player[:, 37]
-            kv[:, :, i, DEMO] = encoded_player[:, 33]  # FIXME demo timer
+            kv[:, :, i, DEMO] = demo_timers[:, i]
             kv[:, :, i, ON_GROUND] = encoded_player[:, 34]
             kv[:, :, i, HAS_FLIP] = encoded_player[:, 36]
+            # kv[:, :, i, HAS_JUMP] = encoded_player[:, 37]
+            # Store twice, these values will be kept absolute while the earlier ones will be made relative
+            # kv[:, :, i, 36:] = kv[:, :, i, POS.start:ANG_VEL.stop]  # FIXME change to "33:" when adding has_jump
 
         kv[teams == 1] *= self._invert
         kv[np.argwhere(teams == 1), ..., (IS_MATE, IS_OPP)] = kv[
@@ -298,9 +355,10 @@ class NectoObsBuilder(BatchedObsBuilder):
         kv /= self._norm
 
         for i in range(n_players):
-            q[i, :, 0, :kv.shape[-1]] = kv[i, :, i, :]
+            q[i, :, 0, :HAS_FLIP] = kv[i, :, i, :HAS_FLIP]
 
-        self.convert_to_relative(q, kv)
+        self.add_relative_components(q, kv)
+        # self.convert_to_relative(q, kv)
         # kv[:, :, :, 5:11] -= q[:, :, :, 5:11]
 
         # MASK
@@ -337,7 +395,8 @@ if __name__ == '__main__':
             return obss
 
 
-    env = rlgym.make(use_injector=True, self_play=True, team_size=3, obs_builder=CombinedObs(NectoObsBuilder(n_players=6), NectoObsOLD()))
+    env = rlgym.make(use_injector=True, self_play=True, team_size=3,
+                     obs_builder=CombinedObs(NectoObsBuilder(n_players=6), NectoObsOLD()))
 
     states = []
     actions = [[np.zeros(8)] for _ in range(6)]
