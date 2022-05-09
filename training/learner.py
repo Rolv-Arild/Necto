@@ -19,12 +19,12 @@ config = dict(
     seed=123,
     actor_lr=5e-5,
     critic_lr=5e-5,
-    n_steps=5_000_000,
-    batch_size=500_000,
+    n_steps=2_000_000,
+    batch_size=200_000,
     minibatch_size=20_000,
     epochs=30,
     gamma=0.9975,
-    iterations_per_save=2,
+    iterations_per_save=5,
     ent_coef=0.01,
 )
 
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     )
 
     if run_id is not None:
-        alg.load("ppos/necto_1651526371.921156/necto_14552/checkpoint.pt")
+        alg.load("ppos/necto_1652091327.5583785/necto_14885/checkpoint.pt")
         alg.agent.optimizer.param_groups[0]["lr"] = logger.config.actor_lr
         alg.agent.optimizer.param_groups[1]["lr"] = logger.config.critic_lr
 
