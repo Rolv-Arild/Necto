@@ -83,11 +83,12 @@ class BetterRandom(StateSetter):  # Random state with some triangular distributi
             car.boost = np.random.uniform(0, 1)
 
 
-# class KickoffLike(StateSetter): TODO
-#     def reset(self, state_wrapper: StateWrapper):
-#         state_wrapper.ball.set_pos(
-#             x=np.random.uniform(-LIM_X, LIM_X)
-#         )
+class NectoReplaySetter(ReplaySetter):
+    def generate_probabilities(self):
+        ball_heights = self.states[:, 2]
+        player_heights = self.states[:, 9 + 2::13]
+        weights = 1 + 10 * (ball_heights + player_heights.sum(axis=-1)) / CEILING_Z
+        return weights / weights.sum()
 
 
 class NectoStateSetter(StateSetter):
