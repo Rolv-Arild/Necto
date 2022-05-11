@@ -55,10 +55,17 @@ class Necto(nn.Module):  # Wraps earl + an output and takes only a single input
     def forward(self, inp):
         q, kv, m = inp
         res = self.earl(q, kv, m)
+        weights = None
+        if isinstance(res, tuple):
+            res, weights = res
         res = self.output(self.relu(res))
         if isinstance(res, tuple):
-            return tuple(r[:, 0, :] for r in res)
-        return res[:, 0, :]
+            res = tuple(r[:, 0, :] for r in res)
+        else:
+            res = res[:, 0, :]
+        if weights is None:
+            return res
+        return res, weights
 
 
 def get_critic():
