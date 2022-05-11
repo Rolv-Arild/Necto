@@ -63,7 +63,7 @@ def make_worker(host, name, password, limit_threads=True, send_gamestates=False,
     agents = None
     human = None
 
-    past_prob = .2
+    past_prob = .4
     eval_prob = .01
     game_speed = 100
 
@@ -92,7 +92,7 @@ def make_worker(host, name, password, limit_threads=True, send_gamestates=False,
                               pretrained_agents=agents,
                               human_agent=human,
                               sigma_target=2,
-                              deterministic_old_prob=0.5)
+                              deterministic_old_prob=0.1)
 
 
 def main():
