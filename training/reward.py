@@ -77,7 +77,7 @@ class NectoRewardFunction(RewardFunction):
 
     @staticmethod
     def _height_activation(z):
-        return ((z - GOAL_HEIGHT) / CEILING_Z) ** (1 / 3)
+        return (((z - GOAL_HEIGHT) / CEILING_Z) ** (1 / 3)).real
 
     def _calculate_rewards(self, state: GameState):
         # Calculate rewards, positive for blue, negative for orange
