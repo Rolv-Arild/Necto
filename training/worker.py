@@ -64,7 +64,7 @@ def make_worker(host, name, password, limit_threads=True, send_gamestates=False,
     human = None
 
     past_prob = .4
-    eval_prob = .01
+    eval_prob = .05
     game_speed = 100
 
     if is_streamer:
@@ -92,7 +92,8 @@ def make_worker(host, name, password, limit_threads=True, send_gamestates=False,
                               pretrained_agents=agents,
                               human_agent=human,
                               sigma_target=2,
-                              deterministic_old_prob=0.1)
+                              deterministic_old_prob=0.1,
+                              deterministic_evaluation=True)
 
 
 def main():
