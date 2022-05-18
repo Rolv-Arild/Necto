@@ -16,17 +16,17 @@ class NectoRewardFunction(RewardFunction):
     def __init__(
             self,
             team_spirit=0.6,  # 0.3 -> 0.5 -> 0.6
-            goal_w=10,
-            goal_dist_w=5,  # 10 -> 5
-            goal_speed_bonus_w=2.5,
-            goal_dist_bonus_w=2.5,
+            goal_w=12.5,  # 10 -> 12.5
+            goal_dist_w=2.5,  # 10 -> 5 -> 2.5
+            goal_speed_bonus_w=1.25,  # 2.5 -> 1.25
+            goal_dist_bonus_w=1.25,  # 2.5 -> 1.25
             demo_w=5,
             dist_w=0.,  # 0.75 -> 0.5 -> 0
             align_w=0.,  # 0.5 -> 0
-            boost_gain_w=0.5,
+            boost_gain_w=0.7,  # 1 -> 0.5 -> 0.7
             boost_lose_w=0.4,  # 0.5 -> 0.7 -> 0.9
             touch_grass_w=0,  # 0.005 -> 0
-            touch_height_w=0.75,  # ~0.9 -> 1 (changed normalization factor) -> (2-on_ground) -> 0.75 (with cbrt)
+            touch_height_w=1,  # ~0.9 -> 1 (changed normalization factor) -> (2-on_ground) -> 0.75 (with cbrt) -> 1
             touch_accel_w=0.,  # 0.5 -> 0
             flip_reset_w=5,  # 0 -> 5
             opponent_punish_w=1
