@@ -18,9 +18,9 @@ config = dict(
     seed=123,
     actor_lr=1e-4,
     critic_lr=1e-4,
-    n_steps=1_00_000,
-    batch_size=10_000,
-    minibatch_size=2_500,
+    n_steps=1_000_000,
+    batch_size=100_000,
+    minibatch_size=20_000,
     epochs=30,
     gamma=0.995,
     iterations_per_save=10,
@@ -74,8 +74,6 @@ if __name__ == "__main__":
         alg.load("")
         alg.agent.optimizer.param_groups[0]["lr"] = logger.config.actor_lr
         alg.agent.optimizer.param_groups[1]["lr"] = logger.config.critic_lr
-    # else:
-    # redis.delete(EXPERIENCE_COUNTER_KEY)  # Reset to 0
 
     log_dir = "E:\\log_directory\\"
     repo_dir = "E:\\repo_directory\\"

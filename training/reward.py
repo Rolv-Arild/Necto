@@ -27,6 +27,7 @@ class NectoRewardFunction(RewardFunction):
             touch_grass_w=0.005,
             touch_height_w=1,
             touch_accel_w=0.5,
+            flip_reset_w=5,
             opponent_punish_w=1
     ):
         self.team_spirit = team_spirit
@@ -45,6 +46,7 @@ class NectoRewardFunction(RewardFunction):
         self.touch_grass_w = touch_grass_w
         self.touch_height_w = touch_height_w
         self.touch_accel_w = touch_accel_w
+        self.flip_reset_w = flip_reset_w
         self.opponent_punish_w = opponent_punish_w
         self.state_quality = None
         self.player_qualities = None
@@ -72,6 +74,10 @@ class NectoRewardFunction(RewardFunction):
         # Half state quality because it is applied to both teams, thus doubling it in the reward distributing
         return state_quality / 2, player_qualities
 
+    @staticmethod
+    def _height_activation(z):
+        return (((float(z) - GOAL_HEIGHT) / CEILING_Z) ** (1 / 3)).real
+
     def pre_step(self, state: GameState):
         # Calculate rewards, positive for blue, negative for orange
         if state != self.current_state:
@@ -80,12 +86,12 @@ class NectoRewardFunction(RewardFunction):
             self.n = 0
         state_quality, player_qualities = self._state_qualities(state)
         player_rewards = np.zeros_like(player_qualities)
+        ball_height = state.ball.position[2]
 
         for i, player in enumerate(state.players):
             last = self.last_state.players[i]
 
-            car_height = player.car_data.position[2] / CEILING_Z
-            ball_height = state.ball.position[2] / CEILING_Z
+            car_height = player.car_data.position[2]
 
             if player.ball_touched:
                 curr_vel = self.current_state.ball.linear_velocity
@@ -94,18 +100,29 @@ class NectoRewardFunction(RewardFunction):
                 # On ground it gets about 0.04 just for touching, as well as some extra for the speed it produces
                 # Ball is pretty close to z=150 when on top of car, so 1 second of dribbling is 1 reward
                 # Close to 20 in the limit with ball on top, but opponents should learn to challenge way before that
-                height_factor = 0.5 * (car_height + ball_height)
+                avg_height = 0.5 * (car_height + ball_height)
+                h0 = self._height_activation(0)
+                h1 = self._height_activation(CEILING_Z)
+                hx = self._height_activation(avg_height)
+                height_factor = (hx - h0) / (h1 - h0)
                 player_rewards[i] += self.touch_height_w * (2 - player.on_ground) * height_factor
+                if player.has_flip and not last.has_flip \
+                        and player.car_data.position[2] > 3 * BALL_RADIUS \
+                        and np.linalg.norm(state.ball.position - player.car_data.position) < 2 * BALL_RADIUS \
+                        and cosine_similarity(state.ball.position - player.car_data.position,
+                                              -player.car_data.up()) > 0.9:
+                    player_rewards[i] += self.flip_reset_w
 
                 # Changing speed of ball from standing still to supersonic (~83kph) is 1 reward
-                player_rewards[i] += self.touch_accel_w * (1 - height_factor) * norm(curr_vel - last_vel) / CAR_MAX_SPEED
+                player_rewards[i] += self.touch_accel_w * (1 - height_factor) * norm(
+                    curr_vel - last_vel) / CAR_MAX_SPEED
 
             # Encourage collecting and saving boost, sqrt to weight boost more the less it has
             boost_diff = np.sqrt(player.boost_amount) - np.sqrt(last.boost_amount)
             if boost_diff >= 0:
                 player_rewards[i] += self.boost_gain_w * boost_diff
-            elif car_height < GOAL_HEIGHT / CEILING_Z:
-                player_rewards[i] += self.boost_lose_w * boost_diff * (1 - car_height)
+            elif car_height < GOAL_HEIGHT:
+                player_rewards[i] += self.boost_lose_w * boost_diff * (1 - car_height / GOAL_HEIGHT)
 
             # Encourage being in the air (slightly)
             player_rewards[i] -= player.on_ground * self.touch_grass_w
