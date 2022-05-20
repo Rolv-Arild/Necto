@@ -2,6 +2,7 @@ import os
 import random
 
 import numpy as np
+from redis import Redis
 from rlgym.utils import StateSetter
 from rlgym.utils.common_values import CAR_MAX_SPEED, SIDE_WALL_X, BACK_WALL_Y, CEILING_Z, BALL_RADIUS, CAR_MAX_ANG_VEL, \
     BALL_MAX_SPEED
@@ -13,6 +14,8 @@ from rlgym_tools.extra_state_setters.hoops_setter import HoopsLikeSetter
 from rlgym_tools.extra_state_setters.replay_setter import ReplaySetter
 from rlgym_tools.extra_state_setters.symmetric_setter import KickoffLikeSetter
 from rlgym_tools.extra_state_setters.wall_state import WallPracticeState
+
+from rocket_learn.rollout_generator.redis.utils import _unserialize
 
 LIM_X = SIDE_WALL_X - 1152 / 2 - BALL_RADIUS * 2 ** 0.5
 LIM_Y = BACK_WALL_Y - 1152 / 2 - BALL_RADIUS * 2 ** 0.5
@@ -101,7 +104,7 @@ class NectoReplaySetter(ReplaySetter):
 
 class NectoStateSetter(StateSetter):
     def __init__(
-            self, replay_array, *,
+            self, redis: Redis, *,
             replay_prob=0.7,
             random_prob=0.08,
             kickoff_prob=0.04,
@@ -111,9 +114,12 @@ class NectoStateSetter(StateSetter):
             wall_prob=0.05
     ):  # add goalie_prob/shooting/dribbling?
         super().__init__()
-        # self.redis = redis
+        self.redis = redis
+        self.replay_setters = [
+            NectoReplaySetter(replay_array)
+            for replay_array in _unserialize(redis.get("replay-arrays"))
+        ]
         self.setters = [
-            NectoReplaySetter(replay_array),
             BetterRandom(),
             DefaultState(),
             KickoffLikeSetter(),
@@ -125,9 +131,20 @@ class NectoStateSetter(StateSetter):
             [replay_prob, random_prob, kickoff_prob, kickofflike_prob, goalie_prob, hoops_prob, wall_prob])
         assert self.probs.sum() == 1, "Probabilities must sum to 1"
 
+    def build_wrapper(self, max_team_size: int, spawn_opponents: bool) -> StateWrapper:
+        assert max_team_size >= 3, "Env has to support 3 players per team"
+        assert spawn_opponents, "Env has to spawn opponents"
+        gamemode_counts = self.redis.hgetall(EXPERIENCE_COUNTER_KEY)
+        mode = min(gamemode_counts, key=gamemode_counts.get)
+        team_size = int(mode[0])
+        return StateWrapper(blue_count=team_size, orange_count=team_size)
+
     def reset(self, state_wrapper: StateWrapper):
         # counts = self.redis.hgetall(EXPERIENCE_COUNTER_KEY)
         # gamemode = int(min(counts, key=counts.get)[:1])
         # # FIXME: Generate state wrapper from gamemode
-        i = np.random.choice(len(self.setters), p=self.probs)
-        self.setters[i].reset(state_wrapper)
+        i = np.random.choice(1 + len(self.setters), p=self.probs)
+        if i == 0:
+            self.replay_setters[len(state_wrapper.cars) // 2 - 1].reset(state_wrapper)
+        else:
+            self.setters[i - 1].reset(state_wrapper)

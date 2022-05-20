@@ -22,16 +22,9 @@ from training.state import NectoStateSetter
 from training.terminal import NectoTerminalCondition, NectoHumanTerminalCondition
 
 
-def get_match(r, force_match_size, replay_arrays, game_speed=100, human_match=False):
-    # order = (1, 2, 3, 1, 1, 2, 1, 1, 3, 2, 1)  # Close as possible number of agents
-    # order = (1, 1, 2, 1, 1, 2, 3, 1, 1, 2, 3)  # Close as possible with 1s >= 2s >= 3s
-    # After testing, this seems like a more accurate distribution
-    order = (1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1, 2, 1, 3, 1, 2, 3, 1, 2, 1, 3, 1, 2, 1, 3, 2, 1, 3, 2, 1, 1, 3, 2)
-
-    # order = (1,)
-    team_size = random.choice(order)  # order[r % len(order)]
+def get_match(r, force_match_size, game_speed=100, human_match=False):
     if force_match_size:
-        team_size = force_match_size
+        team_size = force_match_size  # TODO
 
     terminals = NectoTerminalCondition
     if human_match:
@@ -43,14 +36,15 @@ def get_match(r, force_match_size, replay_arrays, game_speed=100, human_match=Fa
         terminal_conditions=NectoTerminalCondition(),
         obs_builder=NectoObsBuilder(6),
         action_parser=NectoAction(),  # NectoActionTEST(),  # KBMAction()
-        state_setter=AugmentSetter(NectoStateSetter(replay_arrays[team_size - 1])),
-        self_play=True,
-        team_size=team_size,
+        state_setter=AugmentSetter(NectoStateSetter(r)),
+        team_size=3,
+        spawn_opponents=True,
         game_speed=game_speed,
     )
 
 
-def make_worker(host, name, password, limit_threads=True, send_gamestates=False, force_match_size=None,
+def make_worker(host, name, password, limit_threads=True, send_obs=True,
+                send_gamestates=True, force_match_size=None,
                 is_streamer=False, human_match=False):
     if limit_threads:
         torch.set_num_threads(1)
@@ -74,12 +68,11 @@ def make_worker(host, name, password, limit_threads=True, send_gamestates=False,
         game_speed = 1
         human = HumanAgent()
 
-    replay_arrays = _unserialize(r.get("replay-arrays"))
+    # replay_arrays = _unserialize(r.get("replay-arrays"))
 
     return RedisRolloutWorker(r, name,
                               match=get_match(r, force_match_size,
                                               game_speed=game_speed,
-                                              replay_arrays=replay_arrays,
                                               human_match=human_match),
                               past_version_prob=past_prob,
                               evaluation_prob=eval_prob,
@@ -125,7 +118,8 @@ def main():
     try:
         worker = make_worker(ip, name, password,
                              limit_threads=True,
-                             send_gamestates=compress,
+                             send_obs=not compress,
+                             send_gamestates=True,
                              force_match_size=force_match_size,
                              is_streamer=stream_state,
                              human_match=human_match)

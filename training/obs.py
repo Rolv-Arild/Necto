@@ -1,6 +1,8 @@
 from typing import Any
 
 import numpy as np
+from gym import Space
+from gym.spaces import Tuple, Box
 from numba import njit
 from rlgym.utils import ObsBuilder
 from rlgym.utils.action_parsers import DefaultAction
@@ -8,7 +10,8 @@ from rlgym.utils.common_values import BOOST_LOCATIONS, BLUE_TEAM, ORANGE_TEAM
 from rlgym.utils.gamestates import GameState, PlayerData
 
 from rocket_learn.utils.batched_obs_builder import BatchedObsBuilder
-from rocket_learn.utils.util import encode_gamestate
+from rocket_learn.utils.gamestate_encoding import encode_gamestate
+from rocket_learn.utils.gamestate_encoding import StateConstants as SC
 
 
 class NectoObsOLD(ObsBuilder):
@@ -133,16 +136,18 @@ LIN_VEL = slice(8, 11)
 FW = slice(11, 14)
 UP = slice(14, 17)
 ANG_VEL = slice(17, 20)
-# BOOST, DEMO, ON_GROUND, HAS_FLIP, HAS_JUMP = range(20, 25)
-# ACTIONS = range(25, 33)
-BOOST, DEMO, ON_GROUND, HAS_FLIP = range(20, 24)
-ACTIONS = range(24, 32)
+BOOST, DEMO, ON_GROUND, HAS_FLIP, HAS_JUMP = range(20, 25)
+ACTIONS = range(25, 33)
+
+
+# BOOST, DEMO, ON_GROUND, HAS_FLIP = range(20, 24)
+# ACTIONS = range(24, 32)
 
 
 class NectoObsBuilder(BatchedObsBuilder):
     _boost_locations = np.array(BOOST_LOCATIONS)
-    _invert = np.array([1] * 5 + [-1, -1, 1] * 5 + [1] * 4 + [1] * 25)
-    _norm = np.array([1.] * 5 + [2300] * 6 + [1] * 6 + [5.5] * 3 + [1, 10, 1, 1] + [1] * 25)
+    _invert = np.array([1] * 5 + [-1, -1, 1] * 5 + [1] * 5 + [1] * 30)
+    _norm = np.array([1.] * 5 + [2300] * 6 + [1] * 6 + [5.5] * 3 + [1, 10, 1, 1, 1] + [1] * 30)
 
     def __init__(self, n_players=None, tick_skip=8):
         super().__init__()
@@ -157,6 +162,15 @@ class NectoObsBuilder(BatchedObsBuilder):
     def _reset(self, initial_state: GameState):
         self.demo_timers = np.zeros(len(initial_state.players))
         self.boost_timers = np.zeros(len(initial_state.boost_pads))
+
+    def get_obs_space(self) -> Space:
+        players = self.n_players or 6
+        entities = 1 + players + len(self._boost_locations)
+        return Tuple((
+            Box(-np.inf, np.inf, (1, len(self._invert) - 30 + 8)),
+            Box(-np.inf, np.inf, (entities, len(self._invert))),
+            Box(-np.inf, np.inf, (entities,)),
+        ))
 
     @staticmethod
     def _quats_to_rot_mtx(quats: np.ndarray) -> np.ndarray:
@@ -308,8 +322,8 @@ class NectoObsBuilder(BatchedObsBuilder):
         sel_boosts = slice(sel_ball + 1, None)
 
         # MAIN ARRAYS
-        q = np.zeros((n_players, encoded_states.shape[0], 1, 32))
-        kv = np.zeros((n_players, encoded_states.shape[0], n_entities, 24 + 25))
+        q = np.zeros((n_players, encoded_states.shape[0], 1, 33))
+        kv = np.zeros((n_players, encoded_states.shape[0], n_entities, 25 + 30))
         m = np.zeros((n_players, encoded_states.shape[0], n_entities))  # Mask is shared
 
         # BALL
@@ -333,20 +347,18 @@ class NectoObsBuilder(BatchedObsBuilder):
                              players_start_index + i * player_length: players_start_index + (i + 1) * player_length]
 
             kv[i, :, i, IS_SELF] = 1
-            kv[:, :, i, POS] = encoded_player[:, 2: 5]  # TODO constants for these indices
-            kv[:, :, i, LIN_VEL] = encoded_player[:, 9: 12]
-            quats = encoded_player[:, 5: 9]
+            kv[:, :, i, POS] = encoded_player[:, SC.CAR_POS_X.start: SC.CAR_POS_Z.start + 1]
+            kv[:, :, i, LIN_VEL] = encoded_player[:, SC.CAR_LINEAR_VEL_X.start: SC.CAR_LINEAR_VEL_Z.start + 1]
+            quats = encoded_player[:, SC.CAR_QUAT_W.start: SC.CAR_QUAT_Z.start + 1]
             rot_mtx = self._quats_to_rot_mtx(quats)
             kv[:, :, i, FW] = rot_mtx[:, :, 0]
             kv[:, :, i, UP] = rot_mtx[:, :, 2]
-            kv[:, :, i, ANG_VEL] = encoded_player[:, 12: 15]
-            kv[:, :, i, BOOST] = encoded_player[:, 37]
+            kv[:, :, i, ANG_VEL] = encoded_player[:, SC.CAR_ANGULAR_VEL_X.start: SC.CAR_ANGULAR_VEL_Z.start + 1]
+            kv[:, :, i, BOOST] = encoded_player[:, SC.BOOST_AMOUNT.start]
             kv[:, :, i, DEMO] = demo_timers[:, i]
-            kv[:, :, i, ON_GROUND] = encoded_player[:, 34]
-            kv[:, :, i, HAS_FLIP] = encoded_player[:, 36]
-            # kv[:, :, i, HAS_JUMP] = encoded_player[:, 37]
-            # Store twice, these values will be kept absolute while the earlier ones will be made relative
-            # kv[:, :, i, 36:] = kv[:, :, i, POS.start:ANG_VEL.stop]  # FIXME change to "33:" when adding has_jump
+            kv[:, :, i, ON_GROUND] = encoded_player[:, SC.ON_GROUND.start]
+            kv[:, :, i, HAS_FLIP] = encoded_player[:, SC.HAS_FLIP.start]
+            kv[:, :, i, HAS_JUMP] = encoded_player[:, SC.HAS_JUMP.start]
 
         kv[teams == 1] *= self._invert
         kv[np.argwhere(teams == 1), ..., (IS_MATE, IS_OPP)] = kv[
@@ -355,7 +367,7 @@ class NectoObsBuilder(BatchedObsBuilder):
         kv /= self._norm
 
         for i in range(n_players):
-            q[i, :, 0, :HAS_FLIP] = kv[i, :, i, :HAS_FLIP]
+            q[i, :, 0, :HAS_JUMP + 1] = kv[i, :, i, :HAS_JUMP + 1]
 
         self.add_relative_components(q, kv)
         # self.convert_to_relative(q, kv)

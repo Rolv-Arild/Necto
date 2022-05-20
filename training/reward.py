@@ -19,14 +19,14 @@ class NectoRewardFunction(RewardFunction):
             goal_dist_w=10,
             goal_speed_bonus_w=2.5,
             goal_dist_bonus_w=2.5,
-            demo_w=5,
+            demo_w=10,
             dist_w=0.5,
             align_w=0.5,
             boost_gain_w=1,
-            boost_lose_w=0.5,
+            boost_lose_w=0.,
             touch_grass_w=0.005,
             touch_height_w=1,
-            touch_accel_w=0.25,
+            touch_accel_w=0.5,
             opponent_punish_w=1
     ):
         self.team_spirit = team_spirit
@@ -72,8 +72,12 @@ class NectoRewardFunction(RewardFunction):
         # Half state quality because it is applied to both teams, thus doubling it in the reward distributing
         return state_quality / 2, player_qualities
 
-    def _calculate_rewards(self, state: GameState):
+    def pre_step(self, state: GameState):
         # Calculate rewards, positive for blue, negative for orange
+        if state != self.current_state:
+            self.last_state = self.current_state
+            self.current_state = state
+            self.n = 0
         state_quality, player_qualities = self._state_qualities(state)
         player_rewards = np.zeros_like(player_qualities)
 
@@ -166,11 +170,6 @@ class NectoRewardFunction(RewardFunction):
         self.state_quality, self.player_qualities = self._state_qualities(initial_state)
 
     def get_reward(self, player: PlayerData, state: GameState, previous_action: np.ndarray) -> float:
-        if state != self.current_state:
-            self.last_state = self.current_state
-            self.current_state = state
-            self._calculate_rewards(state)
-            self.n = 0
         rew = self.rewards[self.n]
         self.n += 1
         return float(rew)  # / 3.2  # Divide to get std of expected reward to ~1 at start, helps value net a little

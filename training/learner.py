@@ -11,6 +11,9 @@ from training.obs import NectoObsBuilder
 from training.parser import NectoAction
 from training.reward import NectoRewardFunction
 
+from rocket_learn.utils.stat_trackers.common_trackers import Speed, Demos, TimeoutRate, Touch, EpisodeLength, Boost, \
+    BehindBall, TouchHeight
+
 config = dict(
     seed=123,
     actor_lr=1e-4,
@@ -20,7 +23,7 @@ config = dict(
     minibatch_size=2_500,
     epochs=30,
     gamma=0.995,
-    iterations_per_save=1,
+    iterations_per_save=10,
     ent_coef=0.01,
 )
 
@@ -29,13 +32,18 @@ if __name__ == "__main__":
 
     run_id = None
 
-    _, ip, password = sys.argv
-    wandb.login(key=os.environ["WANDB_KEY"])
+    wandb_key = os.environ["WANDB_KEY"]
+    redis_password = os.environ["REDIS_PASSWORD"]
+    _, ip = sys.argv
+    wandb.login(key=wandb_key)
     logger = wandb.init(name="necto-v3-test", project="rocket-learn", entity="rolv-arild", id=run_id, config=config)
     torch.manual_seed(logger.config.seed)
 
-    redis = Redis(host=ip, password=password)
+    redis = Redis(host=ip, password=redis_password)
 
+    stat_trackers = [
+        Speed(), Demos(), TimeoutRate(), Touch(), EpisodeLength(), Boost(), BehindBall(), TouchHeight()
+    ]
     rollout_gen = RedisRolloutGenerator("necto",
                                         redis,
                                         lambda: NectoObsBuilder(6),
@@ -44,7 +52,9 @@ if __name__ == "__main__":
                                         save_every=logger.config.iterations_per_save,
                                         logger=logger,
                                         clear=run_id is None,
-                                        max_age=1)
+                                        max_age=1,
+                                        stat_trackers=stat_trackers
+                                        )
 
     agent = get_agent(actor_lr=logger.config.actor_lr, critic_lr=logger.config.critic_lr)
 
@@ -65,7 +75,7 @@ if __name__ == "__main__":
         alg.agent.optimizer.param_groups[0]["lr"] = logger.config.actor_lr
         alg.agent.optimizer.param_groups[1]["lr"] = logger.config.critic_lr
     # else:
-        # redis.delete(EXPERIENCE_COUNTER_KEY)  # Reset to 0
+    # redis.delete(EXPERIENCE_COUNTER_KEY)  # Reset to 0
 
     log_dir = "E:\\log_directory\\"
     repo_dir = "E:\\repo_directory\\"
