@@ -163,7 +163,7 @@ class NectoObsBuilder(BatchedObsBuilder):
         self.tick_skip = tick_skip
 
     def _reset(self, initial_state: GameState):
-        self.demo_timers = np.zeros(len(initial_state.players))
+        self.demo_timers = np.zeros(self.n_players or len(initial_state.players))
         self.boost_timers = np.zeros(len(initial_state.boost_pads))
 
     def get_obs_space(self) -> Space:
@@ -279,20 +279,27 @@ class NectoObsBuilder(BatchedObsBuilder):
                        boost_states: np.ndarray, demo_states: np.ndarray):
         for i in range(1, boost_timers.shape[0]):
             for b in range(boost_timers.shape[1]):
-                if boost_states[i, b] == 0:
-                    if self_boost_locations[b, 2] > 72:
+                if boost_states[i - 1, b] == 0:  # Not available
+                    prev_timer = boost_timers[i - 1, b]
+                    if prev_timer > 0:
+                        boost_timers[i, b] = max(0, prev_timer - self_tick_skip / 120)
+                    elif self_boost_locations[b, 2] > 72:
                         boost_timers[i, b] = 10
                     else:
                         boost_timers[i, b] = 4
-                elif i - 1 >= 0 and boost_timers[i - 1, b] > 0:
-                    boost_timers[i, b] = max(0, boost_timers[i - 1, b] - self_tick_skip / 120)
+                else:  # Available
+                    boost_timers[i, b] = 0
 
         for i in range(1, demo_timers.shape[0]):
             for b in range(demo_timers.shape[1]):
-                if demo_states[i, b] == 1:
-                    demo_timers[i, b] = 3
-                elif i - 1 >= 0 and demo_timers[i - 1, b] > 0:
-                    demo_timers[i, b] = max(0, demo_timers[i - 1, b] - self_tick_skip / 120)
+                if demo_states[i - 1, b] == 1:  # Demoed
+                    prev_timer = demo_timers[i - 1, b]
+                    if prev_timer > 0:
+                        demo_timers[i, b] = max(0, prev_timer - self_tick_skip / 120)
+                    else:
+                        demo_timers[i, b] = 3
+                else:  # Not demoed
+                    demo_timers[i, b] = 0
 
     def batched_build_obs(self, encoded_states: np.ndarray):
         ball_start_index = 3 + GameState.BOOST_PADS_LENGTH
