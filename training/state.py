@@ -6,6 +6,7 @@ from redis import Redis
 from rlgym.utils import StateSetter
 from rlgym.utils.common_values import CAR_MAX_SPEED, SIDE_WALL_X, BACK_WALL_Y, CEILING_Z, BALL_RADIUS, CAR_MAX_ANG_VEL, \
     BALL_MAX_SPEED
+from rlgym.utils.gamestates import GameState
 from rlgym.utils.math import rand_vec3
 from rlgym.utils.state_setters import DefaultState, StateWrapper
 
@@ -123,13 +124,13 @@ class NectoStateSetter(StateSetter):
             [replay_prob, random_prob, kickoff_prob, kickofflike_prob, goalie_prob, hoops_prob, wall_prob])
         assert self.probs.sum() == 1, "Probabilities must sum to 1"
 
-    def build_wrapper(self, max_team_size: int, spawn_opponents: bool) -> StateWrapper:
-        assert max_team_size >= 3, "Env has to support 3 players per team"
-        assert spawn_opponents, "Env has to spawn opponents"
-        gamemode_counts = self.redis.hgetall(EXPERIENCE_COUNTER_KEY)
-        mode = min(gamemode_counts, key=gamemode_counts.get)
-        team_size = int(mode[0])
-        return StateWrapper(blue_count=team_size, orange_count=team_size)
+    # def build_wrapper(self, max_team_size: int, spawn_opponents: bool) -> StateWrapper:
+    #     assert max_team_size >= 3, "Env has to support 3 players per team"
+    #     assert spawn_opponents, "Env has to spawn opponents"
+    #     gamemode_counts = self.redis.hgetall(EXPERIENCE_COUNTER_KEY)
+    #     mode = min(gamemode_counts, key=gamemode_counts.get)
+    #     team_size = int(mode[0])
+    #     return StateWrapper(blue_count=team_size, orange_count=team_size)
 
     def reset(self, state_wrapper: StateWrapper):
         # counts = self.redis.hgetall(EXPERIENCE_COUNTER_KEY)

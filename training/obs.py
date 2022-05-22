@@ -12,6 +12,7 @@ from rlgym.utils.gamestates import GameState, PlayerData
 from rocket_learn.utils.batched_obs_builder import BatchedObsBuilder
 from rocket_learn.utils.gamestate_encoding import encode_gamestate
 from rocket_learn.utils.gamestate_encoding import StateConstants as SC
+from training.scoreboard import Scoreboard
 
 
 class NectoObsOLD(ObsBuilder):
@@ -272,11 +273,8 @@ class NectoObsBuilder(BatchedObsBuilder):
 
     @staticmethod
     @njit
-    def _update_timers(self_boost_timers, self_boost_locations, self_demo_timers, self_tick_skip,
+    def _update_timers(boost_timers, self_boost_locations, demo_timers, self_tick_skip,
                        boost_states: np.ndarray, demo_states: np.ndarray):
-        boost_timers = np.zeros((boost_states.shape[0] + 1, boost_states.shape[1]))
-        boost_timers[0, :] = self_boost_timers
-
         for i in range(1, boost_timers.shape[0]):
             for b in range(boost_timers.shape[1]):
                 if boost_states[i, b] == 0:
@@ -286,19 +284,13 @@ class NectoObsBuilder(BatchedObsBuilder):
                         boost_timers[i, b] = 4
                 elif i - 1 >= 0 and boost_timers[i - 1, b] > 0:
                     boost_timers[i, b] = max(0, boost_timers[i - 1, b] - self_tick_skip / 120)
-        # self.boost_timers = boost_timers[-1, :]
 
-        demo_timers = np.zeros((demo_states.shape[0] + 1, demo_states.shape[1]))
-        demo_timers[0, :] = self_demo_timers
         for i in range(1, demo_timers.shape[0]):
             for b in range(demo_timers.shape[1]):
                 if demo_states[i, b] == 1:
                     demo_timers[i, b] = 3
                 elif i - 1 >= 0 and demo_timers[i - 1, b] > 0:
                     demo_timers[i, b] = max(0, demo_timers[i - 1, b] - self_tick_skip / 120)
-        # self.demo_timers = demo_timers[-1, :]
-
-        return boost_timers[1:], demo_timers[1:]
 
     def batched_build_obs(self, encoded_states: np.ndarray):
         ball_start_index = 3 + GameState.BOOST_PADS_LENGTH
@@ -309,10 +301,19 @@ class NectoObsBuilder(BatchedObsBuilder):
         lim_players = n_players if self.n_players is None else self.n_players
         n_entities = lim_players + 1 + 34  # Includes player+ball+boosts
 
-        boost_timers, demo_timers = self._update_timers(self.boost_timers, self._boost_locations,
-                                                        self.demo_timers, self.tick_skip,
-                                                        encoded_states[:, 3:3 + 34],
-                                                        encoded_states[:, players_start_index + 33::player_length])
+        # Update boost and demo timers
+        # Need to create them here since numba does not support array creation
+        boost_states = encoded_states[:, 3:3 + 34]
+        boost_timers = np.zeros((boost_states.shape[0] + 1, boost_states.shape[1]))
+        boost_timers[0, :] = self.boost_timers
+
+        demo_states = encoded_states[:, players_start_index + 33::player_length]
+        demo_timers = np.zeros((demo_states.shape[0] + 1, demo_states.shape[1]))
+        demo_timers[0, :] = self.demo_timers
+        boost_timers, demo_timers = self._update_timers(boost_timers, self._boost_locations,
+                                                        demo_timers, self.tick_skip)
+        boost_timers = boost_timers[1:]
+        demo_timers = demo_timers[1:]
         self.boost_timers = boost_timers[-1, :]
         self.demo_timers = demo_timers[-1, :]
 
