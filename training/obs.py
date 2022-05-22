@@ -278,7 +278,7 @@ class NectoObsBuilder(BatchedObsBuilder):
     def _update_timers(boost_timers, self_boost_locations, demo_timers, self_tick_skip,
                        boost_states: np.ndarray, demo_states: np.ndarray):
         for i in range(1, boost_timers.shape[0]):
-            for b in range(demo_states.shape[1]):
+            for b in range(boost_states.shape[1]):
                 if boost_states[i - 1, b] == 0:  # Not available
                     prev_timer = boost_timers[i - 1, b]
                     if prev_timer > 0:
@@ -313,17 +313,17 @@ class NectoObsBuilder(BatchedObsBuilder):
         # Update boost and demo timers
         # Need to create them here since numba does not support array creation
         boost_states = encoded_states[:, 3:3 + 34]
-        boost_timers = np.zeros((boost_states.shape[0] + 1, boost_states.shape[1]))
+        boost_timers = np.zeros((boost_states.shape[0] + 1, self.boost_timers.shape[0]))
         boost_timers[0, :] = self.boost_timers
 
         demo_states = encoded_states[:, players_start_index + 33::player_length]
-        demo_timers = np.zeros((demo_states.shape[0] + 1, demo_states.shape[1]))
+        demo_timers = np.zeros((demo_states.shape[0] + 1, self.demo_timers.shape[0]))
         demo_timers[0, :] = self.demo_timers
         self._update_timers(boost_timers, self._boost_locations,
                             demo_timers, self.tick_skip,
                             boost_states, demo_states)
-        boost_timers = boost_timers[1:]
-        demo_timers = demo_timers[1:]
+        # boost_timers = boost_timers[1:]
+        # demo_timers = demo_timers[1:]
         self.boost_timers = boost_timers[-1, :]
         self.demo_timers = demo_timers[-1, :]
 
