@@ -12,7 +12,7 @@ from rlgym.utils.gamestates import GameState, PlayerData
 from rocket_learn.utils.batched_obs_builder import BatchedObsBuilder
 from rocket_learn.utils.gamestate_encoding import encode_gamestate
 from rocket_learn.utils.gamestate_encoding import StateConstants as SC
-from training.scoreboard import Scoreboard
+# from training.scoreboard import Scoreboard
 
 
 class NectoObsOLD(ObsBuilder):
@@ -311,7 +311,8 @@ class NectoObsBuilder(BatchedObsBuilder):
         demo_timers = np.zeros((demo_states.shape[0] + 1, demo_states.shape[1]))
         demo_timers[0, :] = self.demo_timers
         boost_timers, demo_timers = self._update_timers(boost_timers, self._boost_locations,
-                                                        demo_timers, self.tick_skip)
+                                                        demo_timers, self.tick_skip,
+                                                        boost_states, demo_states)
         boost_timers = boost_timers[1:]
         demo_timers = demo_timers[1:]
         self.boost_timers = boost_timers[-1, :]
