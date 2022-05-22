@@ -278,7 +278,7 @@ class NectoObsBuilder(BatchedObsBuilder):
     def _update_timers(boost_timers, self_boost_locations, demo_timers, self_tick_skip,
                        boost_states: np.ndarray, demo_states: np.ndarray):
         for i in range(1, boost_timers.shape[0]):
-            for b in range(boost_timers.shape[1]):
+            for b in range(demo_states.shape[1]):
                 if boost_states[i - 1, b] == 0:  # Not available
                     prev_timer = boost_timers[i - 1, b]
                     if prev_timer > 0:
@@ -291,7 +291,7 @@ class NectoObsBuilder(BatchedObsBuilder):
                     boost_timers[i, b] = 0
 
         for i in range(1, demo_timers.shape[0]):
-            for b in range(demo_timers.shape[1]):
+            for b in range(demo_states.shape[1]):
                 if demo_states[i - 1, b] == 1:  # Demoed
                     prev_timer = demo_timers[i - 1, b]
                     if prev_timer > 0:
