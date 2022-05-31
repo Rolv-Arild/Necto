@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 from rlgym.utils import RewardFunction
 from rlgym.utils.common_values import CEILING_Z, BALL_MAX_SPEED, CAR_MAX_SPEED, BLUE_TEAM, BLUE_GOAL_BACK, \
@@ -7,6 +9,8 @@ from rlgym.utils.math import cosine_similarity
 from numpy import exp
 from numpy.linalg import norm
 
+from rocket_learn.utils.scoreboard import Scoreboard, win_prob
+
 
 class NectoRewardFunction(RewardFunction):
     BLUE_GOAL = (np.array(BLUE_GOAL_BACK) + np.array(BLUE_GOAL_CENTER)) / 2
@@ -15,7 +19,7 @@ class NectoRewardFunction(RewardFunction):
     def __init__(
             self,
             team_spirit=0.3,
-            goal_w=10,
+            goal_w=15,
             goal_dist_w=10,
             goal_speed_bonus_w=2.5,
             goal_dist_bonus_w=2.5,
@@ -145,26 +149,41 @@ class NectoRewardFunction(RewardFunction):
         # random state could send ball straight into goal
         d_blue = state.blue_score - self.last_state.blue_score
         d_orange = state.orange_score - self.last_state.orange_score
-        if d_blue > 0:
-            goal_speed = norm(self.last_state.ball.linear_velocity)
-            distances = norm(
-                np.stack([p.car_data.position for p in state.players[mid:]])
+        blue, orange, ticks_left = state.inverted_ball.angular_velocity
+        if d_blue > 0 or d_orange > 0 \
+                or ticks_left < 0 and np.isinf(ticks_left):
+            home = slice(None, mid)
+            away = slice(mid, None)
+            new_diff = blue - orange
+            d_home = d_blue
+            if d_orange > 0:
+                home, away = away, home
+                new_diff *= -1
+                d_home = d_orange
+            old_diff = new_diff - d_home
+            goal_speed = d_home * norm(self.last_state.ball.linear_velocity)
+            distances = d_home * norm(
+                np.stack([p.car_data.position for p in state.players[away]])
                 - self.last_state.ball.position,
                 axis=-1
             )
-            player_rewards[mid:] = -self.goal_dist_bonus_w * (1 - exp(-distances / CAR_MAX_SPEED))
-            player_rewards[:mid] = (self.goal_w * d_blue
-                                    + self.goal_dist_bonus_w * goal_speed / BALL_MAX_SPEED)
-        if d_orange > 0:
-            goal_speed = norm(self.last_state.ball.linear_velocity)
-            distances = norm(
-                np.stack([p.car_data.position for p in state.players[:mid]])
-                - self.last_state.ball.position,
-                axis=-1
-            )
-            player_rewards[:mid] = -self.goal_dist_bonus_w * (1 - exp(-distances / CAR_MAX_SPEED))
-            player_rewards[mid:] = (self.goal_w * d_orange
-                                    + self.goal_dist_bonus_w * goal_speed / BALL_MAX_SPEED)
+            old_prob, new_prob = win_prob(len(state.players) // 2,
+                                          [ticks_left / 120] * 2,
+                                          np.clip([old_diff, new_diff], -5, 5))
+            if ticks_left <= 0 or np.isinf(ticks_left):  # Goal scored at 0 seconds / in overtime
+                if new_diff > 0:
+                    new_prob = 1
+                elif new_diff < 0:
+                    new_prob = 0
+                else:
+                    new_prob = 0.5
+            prob_diff = new_prob - old_prob
+            # TODO Want to find something better, this could promote waiting to score when losing
+            print(f"{prob_diff=}, {old_prob=}, {new_prob=}, {ticks_left=}, "
+                  f"{old_diff=}, {new_diff=}, {blue=}, {orange=}")
+            player_rewards[away] -= self.goal_dist_bonus_w * (1 - exp(-distances / CAR_MAX_SPEED))
+            player_rewards[home] += (self.goal_w * d_blue * (0.5 + prob_diff)
+                                     + self.goal_dist_bonus_w * goal_speed / BALL_MAX_SPEED)
 
         blue = player_rewards[:mid]
         orange = player_rewards[mid:]

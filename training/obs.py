@@ -13,8 +13,8 @@ from rocket_learn.utils.batched_obs_builder import BatchedObsBuilder
 from rocket_learn.utils.gamestate_encoding import encode_gamestate
 from rocket_learn.utils.gamestate_encoding import StateConstants as SC
 
-
 # from training.scoreboard import Scoreboard
+from rocket_learn.utils.scoreboard import Scoreboard
 
 
 class NectoObsOLD(ObsBuilder):
@@ -141,6 +141,7 @@ UP = slice(14, 17)
 ANG_VEL = slice(17, 20)
 BOOST, DEMO, ON_GROUND, HAS_FLIP, HAS_JUMP = range(20, 25)
 ACTIONS = range(25, 33)
+GOAL_DIFF, TIME_LEFT, IS_OVERTIME = range(33, 36)
 
 
 # BOOST, DEMO, ON_GROUND, HAS_FLIP = range(20, 24)
@@ -152,8 +153,8 @@ class NectoObsBuilder(BatchedObsBuilder):
     _invert = np.array([1] * 5 + [-1, -1, 1] * 5 + [1] * 5 + [1] * 30)
     _norm = np.array([1.] * 5 + [2300] * 6 + [1] * 6 + [5.5] * 3 + [1, 10, 1, 1, 1] + [1] * 30)
 
-    def __init__(self, n_players=None, tick_skip=8):
-        super().__init__()
+    def __init__(self, scoreboard: Scoreboard, n_players=None, tick_skip=8):
+        super().__init__(scoreboard)
         self.n_players = n_players
         self.demo_timers = None
         self.boost_timers = None
@@ -322,8 +323,8 @@ class NectoObsBuilder(BatchedObsBuilder):
         self._update_timers(boost_timers, self._boost_locations,
                             demo_timers, self.tick_skip,
                             boost_states, demo_states)
-        # boost_timers = boost_timers[1:]
-        # demo_timers = demo_timers[1:]
+        boost_timers = boost_timers[1:]
+        demo_timers = demo_timers[1:]
         self.boost_timers = boost_timers[-1, :]
         self.demo_timers = demo_timers[-1, :]
 
@@ -333,9 +334,21 @@ class NectoObsBuilder(BatchedObsBuilder):
         sel_boosts = slice(sel_ball + 1, None)
 
         # MAIN ARRAYS
-        q = np.zeros((n_players, encoded_states.shape[0], 1, 33))
+        q = np.zeros((n_players, encoded_states.shape[0], 1, 25 + 8 + 3))
         kv = np.zeros((n_players, encoded_states.shape[0], n_entities, 25 + 30))
         m = np.zeros((n_players, encoded_states.shape[0], n_entities))  # Mask is shared
+
+        # SCOREBOARD
+        blue_score = encoded_states[:, SC.BALL_ANGULAR_VELOCITY.start + 9]
+        orange_score = encoded_states[:, SC.BALL_ANGULAR_VELOCITY.start + 10]
+        ticks_left = encoded_states[:, SC.BALL_ANGULAR_VELOCITY.start + 11]
+
+        is_overtime = (ticks_left > 0) & np.isinf(ticks_left)
+        goal_diff = np.clip(blue_score - orange_score, -5, 5) / 5
+        time_left = (~is_overtime) * np.clip(ticks_left, 0, 300) / (120 * 60 * 5)
+        q[:, :, 0, GOAL_DIFF] = goal_diff
+        q[:, :, 0, TIME_LEFT] = time_left
+        q[:, :, 0, IS_OVERTIME] = is_overtime
 
         # BALL
         kv[:, :, sel_ball, 3] = 1

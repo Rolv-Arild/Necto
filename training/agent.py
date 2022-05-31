@@ -69,7 +69,7 @@ class Necto(nn.Module):  # Wraps earl + an output and takes only a single input
 def get_critic():
     # return DiscretePolicy(
     #     Sequential(Linear(107, 128), Linear(128, 128), Linear(128, 128), Linear(128, 1)))
-    return Necto(EARLPerceiver(256, 4, 8, 1, query_features=33, key_value_features=25 + 30),
+    return Necto(EARLPerceiver(256, 4, 8, 1, query_features=36, key_value_features=25 + 30),
                  Linear(256, 1))
 
 
@@ -78,7 +78,7 @@ def get_actor():
     # return DiscretePolicy(
     #     Sequential(Linear(107, 128), Linear(128, 128), Linear(128, 128), ControlsPredictorDiscrete(128, split)), split)
     split = (90,)
-    return DiscretePolicy(Necto(EARLPerceiver(256, 4, 8, 1, query_features=33, key_value_features=25 + 30),
+    return DiscretePolicy(Necto(EARLPerceiver(256, 4, 8, 1, query_features=36, key_value_features=25 + 30),
                                 ControlsPredictorDot(256)), split)
 
 

@@ -9,6 +9,7 @@ from rlgym_tools.extra_state_setters.augment_setter import AugmentSetter
 
 from rocket_learn.rollout_generator.redis.redis_rollout_worker import RedisRolloutWorker
 from rocket_learn.rollout_generator.redis.utils import _unserialize
+from rocket_learn.utils.scoreboard import Scoreboard
 
 try:
     from rocket_learn.agent.pretrained_agents.human_agent import HumanAgent
@@ -22,7 +23,7 @@ from training.state import NectoStateSetter
 from training.terminal import NectoTerminalCondition, NectoHumanTerminalCondition
 
 
-def get_match(r, force_match_size, game_speed=100, human_match=False):
+def get_match(r, force_match_size, scoreboard, game_speed=100, human_match=False):
     if force_match_size:
         team_size = force_match_size  # TODO
 
@@ -34,7 +35,7 @@ def get_match(r, force_match_size, game_speed=100, human_match=False):
         # reward_function=NectoRewardFunction(goal_w=1, team_spirit=0., opponent_punish_w=0., boost_lose_w=0),
         reward_function=NectoRewardFunction(),
         terminal_conditions=NectoTerminalCondition(),
-        obs_builder=NectoObsBuilder(6),
+        obs_builder=NectoObsBuilder(scoreboard, 6),
         action_parser=NectoAction(),  # NectoActionTEST(),  # KBMAction()
         state_setter=AugmentSetter(NectoStateSetter(r)),
         team_size=3,
@@ -68,10 +69,12 @@ def make_worker(host, name, password, limit_threads=True, send_obs=True,
         game_speed = 1
         human = HumanAgent()
 
-    # replay_arrays = _unserialize(r.get("replay-arrays"))
+    scoreboard = Scoreboard()
 
+    # replay_arrays = _unserialize(r.get("replay-arrays"))
     return RedisRolloutWorker(r, name,
                               match=get_match(r, force_match_size,
+                                              scoreboard=scoreboard,
                                               game_speed=game_speed,
                                               human_match=human_match),
                               past_version_prob=past_prob,
@@ -79,7 +82,8 @@ def make_worker(host, name, password, limit_threads=True, send_obs=True,
                               send_gamestates=send_gamestates,
                               streamer_mode=is_streamer,
                               pretrained_agents=agents,
-                              human_agent=human)
+                              human_agent=human,
+                              scoreboard=scoreboard)
 
 
 def main():
