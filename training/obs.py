@@ -35,7 +35,6 @@ class NectoObsOLD(ObsBuilder):
     def reset(self, initial_state: GameState):
         self.demo_timers = np.zeros(self.n_players)
         self.boost_timers = np.zeros(len(initial_state.boost_pads))
-        # self.current_state = initial_state
 
     def _maybe_update_obs(self, state: GameState):
         if state == self.current_state:  # No need to update
@@ -153,7 +152,7 @@ class NectoObsBuilder(BatchedObsBuilder):
     _invert = np.array([1] * 5 + [-1, -1, 1] * 5 + [1] * 5 + [1] * 30)
     _norm = np.array([1.] * 5 + [2300] * 6 + [1] * 6 + [5.5] * 3 + [1, 10, 1, 1, 1] + [1] * 30)
 
-    def __init__(self, scoreboard: Scoreboard, n_players=None, tick_skip=8):
+    def __init__(self, scoreboard: Scoreboard, n_players=6, tick_skip=8):
         super().__init__(scoreboard)
         self.n_players = n_players
         self.demo_timers = None
@@ -303,11 +302,19 @@ class NectoObsBuilder(BatchedObsBuilder):
                     demo_timers[i, b] = 0
 
     def batched_build_obs(self, encoded_states: np.ndarray):
+        if self.boost_timers is None or self.demo_timers is None:
+            # if obs is being rebuilt, need to generate timers
+            #
+            self.demo_timers = np.zeros(self.n_players)
+            self.boost_timers = np.zeros(34)
+
         ball_start_index = 3 + GameState.BOOST_PADS_LENGTH
         players_start_index = ball_start_index + GameState.BALL_STATE_LENGTH
         player_length = GameState.PLAYER_INFO_LENGTH
 
         n_players = (encoded_states.shape[1] - players_start_index) // player_length
+
+        # need to give the same num of max players as workers
         lim_players = n_players if self.n_players is None else self.n_players
         n_entities = lim_players + 1 + 34  # Includes player+ball+boosts
 
@@ -359,8 +366,7 @@ class NectoObsBuilder(BatchedObsBuilder):
         kv[:, :, sel_boosts, IS_BOOST] = 1
         kv[:, :, sel_boosts, POS] = self._boost_locations  # [big_boost_mask]
         kv[:, :, sel_boosts, BOOST] = 1
-        kv[:, :, sel_boosts, DEMO] = boost_timers  # [:, big_boost_mask]
-        # q[:, :, ACTIONS.stop:] = boost_timers[:, ~big_boost_mask]
+        kv[:, :, sel_boosts, DEMO] = boost_timers
 
         # PLAYERS
         teams = encoded_states[0, players_start_index + 1::player_length]
@@ -394,8 +400,6 @@ class NectoObsBuilder(BatchedObsBuilder):
             q[i, :, 0, :HAS_JUMP + 1] = kv[i, :, i, :HAS_JUMP + 1]
 
         self.add_relative_components(q, kv)
-        # self.convert_to_relative(q, kv)
-        # kv[:, :, :, 5:11] -= q[:, :, :, 5:11]
 
         # MASK
         m[:, :, n_players: lim_players] = 1

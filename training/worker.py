@@ -24,15 +24,16 @@ from training.terminal import NectoTerminalCondition, NectoHumanTerminalConditio
 
 
 def get_match(r, force_match_size, scoreboard, game_speed=100, human_match=False):
-    if force_match_size:
+    if force_match_size is not None:
         team_size = force_match_size  # TODO
+    else:
+        team_size = 3
 
     terminals = NectoTerminalCondition
     if human_match:
         terminals = NectoHumanTerminalCondition
 
     return Match(
-        # reward_function=NectoRewardFunction(goal_w=1, team_spirit=0., opponent_punish_w=0., boost_lose_w=0),
         reward_function=NectoRewardFunction(),
         terminal_conditions=NectoTerminalCondition(),
         obs_builder=NectoObsBuilder(scoreboard, 6),
@@ -54,6 +55,7 @@ def make_worker(host, name, password, limit_threads=True, send_obs=True,
     agents = None
     human = None
 
+    dynamic_gm = True if force_match_size is None else False
     past_prob = .2
     eval_prob = .01
     game_speed = 100
@@ -77,9 +79,11 @@ def make_worker(host, name, password, limit_threads=True, send_obs=True,
                                               scoreboard=scoreboard,
                                               game_speed=game_speed,
                                               human_match=human_match),
+                              dynamic_gm=dynamic_gm,
                               past_version_prob=past_prob,
                               evaluation_prob=eval_prob,
                               send_gamestates=send_gamestates,
+                              send_obs=send_obs,
                               streamer_mode=is_streamer,
                               pretrained_agents=agents,
                               human_agent=human,
