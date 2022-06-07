@@ -4,33 +4,44 @@
 
 # What is this?
 
-This is Necto, the RLGym community bot. It's a bot that's learning to play 1's, 2's, and 3's thanks to RLGym.
-Rocket League is a hard game though so we're all working together to give it the experience it needs.
+This is Tokay, our community machine learning Rocket League bot. It's a bot that's learning to play 1's, 2's, and 3's thanks to RLGym.
+We use a custom built distruted learning system to work together to help it learn faster. This is the 3rd generation of
+the bot and we're working towards making a version that can take down pros!
 
-[Watch Nexto go up against Extra of Team BDS!](https://www.twitch.tv/videos/1443124771)
+V1: Necto <br/>
+V2: Nexto <br/>
+V3: Tokay
 
-[Watch Nexto go up against Polar of Team Singularity!](https://www.twitch.tv/videos/1440172971)
 
-[Watch Necto win the 2022 RLBot Championship!](https://youtu.be/XVIxZA6gFRI?t=13753)
+[Watch Nexto V2 go up against RLCS Pros FairyPeak, Breezi, Aztral, Kaydop, and more on our YouTube channel!](https://www.youtube.com/c/RLGym/videos)
+
+[SunlessKhan](https://www.youtube.com/watch?v=owhz5RSX0go) and [Rocket Sledge](https://www.youtube.com/watch?v=LO4h8djNB50&t=387s)
+have both made videos about Nexto!
+
+[Watch Necto V1 win the 2022 RLBot Championship!](https://youtu.be/XVIxZA6gFRI?t=13753)
 
 # How does it work?
 
-Necto (and the new version Nexto) are trained with [Deep Reinforcement Learning](https://wiki.pathmind.com/deep-reinforcement-learning), 
+These bots are trained with [Deep Reinforcement Learning](https://wiki.pathmind.com/deep-reinforcement-learning), 
 a type of Machine Learning. We have several games playing at super speeds behind the scenes while the data is collected and learned from.
 
-We define rewards that Necto tries to achieve. Over time, behavior that leads to more reward gets reinforced, which leads to 
+We define rewards that the bot tries to achieve. Over time, behavior that leads to more reward gets reinforced, which leads to 
 better Rocket League play.
 
 # Can I play against it? 
 
-Yup! Go download the [RLBot pack](https://rlbot.org/) and Necto is one of several bots that you can play against.
+Yup! Go download the [RLBot pack](https://rlbot.org/) and Nexto and Necto are some of the bots that you can play against.
  Make sure fps is set to 120 and VSync is turned off.
 
-# What Rocket League rank is Necto?
+# What Rocket League rank is the bot?
 
-We estimate the RLBot version of Necto is high Diamond. 
+Tokay is still being trained so we don't yet know.
 
-Nexto is still in training but it appears to be low Grand Champion at the moment.
+Nexto is low-mid Grand Champion, depending on the version
+
+Necto is around high Diamond. 
+
+
 
 
 # Can I watch it learn?
@@ -43,7 +54,7 @@ Yes! Check out our [Twitch stream here](https://www.twitch.tv/rlgym).
 # Could it learn by looking at Pro/SSL replays?
 
 It can't directly learn from replays. However, we like to start matches from moments found in high level
-replays. This gives Necto more scenarios to see and learn from.
+replays. This gives the bot more scenarios to see and learn from.
 
 
 # Could it learn by playing against me?
