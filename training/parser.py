@@ -18,7 +18,36 @@ class NectoAction(ActionParser):
         self._lookup_table = self.make_lookup_table()
 
     @staticmethod
-    def make_lookup_table():
+    def make_lookup_table() -> np.array:
+        """
+        Defines possible actions
+
+            throttle(int) -> [-1, 1]
+            steer(int) -> [-1, 1]
+            pitch(int) -> [-1, 1]
+            yaw(int) -> [-1, 1]
+            roll(int) -> [-1, 1]
+
+            jump(bool) -> [0, 1]
+            boost(bool) -> [0, 1]
+            handbrake(bool) -> [0, 1]
+
+        - Conditions
+            if boost == 1
+                -> throttle = 1 (prevents braking and boosting)
+            if jump == 1
+                -> yaw = 0 (Only need roll for sideflip)
+            if pitch == roll == jump == 0
+                -> don't add action (duplicated with ground action)
+            if jump == 1 and (pitch != 0 or yaw != 0 or roll != 0)
+                -> handbrake = 1 (enables possible wavedashing)
+
+        - Array format (one action)
+            [throttle (or boost), steer (or yaw), pitch, yaw (or steer), roll, jump, boost, handbrake]
+
+        Returns:
+            Numpy array with possible actions
+        """
         actions = []
         # Ground
         for throttle in (-1, 0, 1):
@@ -34,23 +63,37 @@ class NectoAction(ActionParser):
                 for roll in (-1, 0, 1):
                     for jump in (0, 1):
                         for boost in (0, 1):
-                            if jump == 1 and yaw != 0:  # Only need roll for sideflip
+                            if jump == 1 and yaw != 0:
                                 continue
-                            if pitch == roll == jump == 0:  # Duplicate with ground
+                            if pitch == roll == jump == 0:
                                 continue
-                            # Enable handbrake for potential wavedashes
                             handbrake = jump == 1 and (pitch != 0 or yaw != 0 or roll != 0)
                             actions.append([boost, yaw, pitch, yaw, roll, jump, boost, handbrake])
         actions = np.array(actions)
         return actions
 
     def get_action_space(self) -> gym.spaces.Space:
+        """
+        Retrieves action space
+
+        Returns:
+            Discrete action space with size of possible actions
+        """
         return Discrete(len(self._lookup_table))
 
     def parse_actions(self, actions: Any, state: GameState) -> np.ndarray:
-        # hacky pass through to allow multiple types of agent actions while still parsing nectos
+        """
+        Pass through that allows both multiple types of agent actions while still parsing Nectos
 
-        # strip out fillers, pass through 8sets, get look up table values, recombine
+        Strip out fillers, pass through 8sets, get look up table values, recombine
+
+        Args:
+            actions (Any): Array of actions
+            state (GameState)
+
+        Returns:
+            Numpy ndarray with parsed actions
+        """
         parsed_actions = []
         for action in actions:
             # support reconstruction
