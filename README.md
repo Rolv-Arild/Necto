@@ -4,13 +4,15 @@
 
 # What is this?
 
-This is Tokay, our community machine learning Rocket League bot. It's a bot that's learning to play 1's, 2's, and 3's thanks to RLGym.
-We use a custom built distruted learning system to work together to help it learn faster. This is the 3rd generation of
-the bot and we're working towards making a version that can take down pros!
+This is Tecko, our community machine learning Rocket League bot. 
+This is the 3rd generation of the bot and its learning to play 1's, 2's, and 3's thanks to RLGym.
+Our end goalis making a version that can take down pros!
+
+Fun fact, Tecko has the same number of neurons as a real life gecko!
 
 V1: Necto <br/>
 V2: Nexto <br/>
-V3: Tokay
+V3: Tecko
 
 
 [Watch Nexto V2 go up against RLCS Pros FairyPeak, Breezi, Aztral, Kaydop, and more on our YouTube channel!](https://www.youtube.com/c/RLGym/videos)
@@ -24,6 +26,7 @@ have both made videos about Nexto!
 
 These bots are trained with [Deep Reinforcement Learning](https://wiki.pathmind.com/deep-reinforcement-learning), 
 a type of Machine Learning. We have several games playing at super speeds behind the scenes while the data is collected and learned from.
+We ingest these games using a custom built distributed learning system.
 
 We define rewards that the bot tries to achieve. Over time, behavior that leads to more reward gets reinforced, which leads to 
 better Rocket League play.
@@ -35,7 +38,7 @@ Yup! Go download the [RLBot pack](https://rlbot.org/) and Nexto and Necto are so
 
 # What Rocket League rank is the bot?
 
-Tokay is still being trained so we don't yet know.
+Tecko is still being trained so we don't yet know.
 
 Nexto is low-mid Grand Champion, depending on the version
 

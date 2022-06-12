@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
+from rlbot.utils.structures.quick_chats import QuickChats
 from rlgym_compat import GameState
 
 from agent import Agent
@@ -46,6 +47,20 @@ class Nexto(BaseAgent):
         self.ticks = 0
         self.prev_time = 0
         self.kickoff_index = -1
+
+        # toxic handling
+        self.isToxic = False
+        self.orangeGoals = 0
+        self.blueGoals = 0
+        self.demoedCount = 0
+        self.lastFrameBall = None
+        self.lastFrameDemod = False
+        self.demoCount = 0
+        self.pesterCount = 0
+        self.demoedTickCount = 0
+        self.demoCalloutCount = 0
+        self.lastPacket = None
+
         print('Nexto Ready - Index:', index)
 
     def initialize_agent(self):
@@ -93,6 +108,9 @@ class Nexto(BaseAgent):
         ticks_elapsed = round(delta * 120)
         self.ticks += ticks_elapsed
         self.game_state.decode(packet, ticks_elapsed)
+
+        if self.isToxic:
+            self.toxicity(packet)
 
         if self.update_action and len(self.game_state.players) > self.index:
             self.update_action = False
@@ -174,3 +192,155 @@ class Nexto(BaseAgent):
         self.controls.jump = action[5] > 0
         self.controls.boost = action[6] > 0
         self.controls.handbrake = action[7] > 0
+
+
+    def toxicity(self, packet):
+        """
+        THE SALT MUST FLOW
+        """
+
+        # prep the toxic
+        scored = False
+        scoredOn = False
+        demoed = False
+        demo = False
+        allyChance = False
+
+        player = packet.game_cars[self.index]
+
+        humanMates = [p for p in packet.game_cars[:packet.num_cars] if p.team == self.team and p.is_bot is False]
+        humanOpps = [p for p in packet.game_cars[:packet.num_cars] if p.team != self.team and p.is_bot is False]
+        goodGoal = [0, -5120] if self.team == 1 else [0, 5120]
+        badGoal = [0, 5120] if self.team == 0 else [0, -5120]
+
+        if player.is_demolished and self.demoedTickCount == 0:  # and not self.lastFrameDemod:
+            demoed = True
+            self.demoedTickCount = 120 * 4
+
+        for p in packet.game_cars:
+            if p.is_demolished and p.team != self.team and self.demoCalloutCount == 0:  # player is closest
+                demo = True
+                self.demoCalloutCount = 120 * 4
+
+        if self.blueGoals != packet.teams[0].score:
+            # blue goal!
+            self.blueGoals = packet.teams[0].score
+            if self.team == 0:
+                scored = True
+            else:
+                scoredOn = True
+
+        if self.orangeGoals != packet.teams[1].score:
+            # orange goal
+            self.orangeGoals = packet.teams[1].score
+            if self.team == 1:
+                scored = True
+            else:
+                scoredOn = True
+
+        self.lastPacket = packet
+
+        # ** NaCl **
+
+        if scored:
+            i = random.randint(0, 6)
+            if i == 0:
+                self.send_quick_chat(QuickChats.CHAT_EVERYONE, QuickChats.Custom_Toxic_GitGut)
+                return
+            if i == 1:
+                self.send_quick_chat(QuickChats.CHAT_EVERYONE, QuickChats.Compliments_Thanks)
+                return
+
+            for p in humanOpps:
+
+                d = math.sqrt((p.physics.location.x - badGoal[0]) ** 2 + (p.physics.location.y - badGoal[1]) ** 2)
+                if d < 2000:
+                    self.send_quick_chat(QuickChats.CHAT_EVERYONE, QuickChats.Compliments_WhatASave)
+                    i = random.randint(0, 3)
+                    if i == 0:
+                        self.send_quick_chat(QuickChats.CHAT_EVERYONE, QuickChats.Reactions_Wow)
+                        self.send_quick_chat(QuickChats.CHAT_EVERYONE, QuickChats.Compliments_WhatASave)
+                    return
+
+            for p in humanOpps:
+                d = math.sqrt((p.physics.location.x - badGoal[0]) ** 2 + (p.physics.location.y - badGoal[1]) ** 2)
+                if d > 9000:
+                    self.send_quick_chat(QuickChats.CHAT_EVERYONE, QuickChats.Reactions_CloseOne)
+                    return
+
+        if scoredOn:
+            for p in humanMates:
+                d = math.sqrt((p.physics.location.x - goodGoal[0]) ** 2 + (p.physics.location.y - goodGoal[1]) ** 2)
+                if d < 2000:
+                    i = random.randint(0, 2)
+                    if i == 0:
+                        self.send_quick_chat(QuickChats.CHAT_EVERYONE, QuickChats.Compliments_NiceBlock)
+                    else:
+                        self.send_quick_chat(QuickChats.CHAT_EVERYONE, QuickChats.Compliments_WhatASave)
+                    return
+
+            i = random.randint(0, 3)
+            if i == 0:
+                self.send_quick_chat(QuickChats.CHAT_EVERYONE, QuickChats.Custom_Excuses_Lag)
+                return
+            elif i == 1:
+                self.send_quick_chat(QuickChats.CHAT_EVERYONE, QuickChats.Reactions_Okay)
+                return
+
+        if demo:
+            i = random.randint(0, 2)
+            if i == 0:
+                self.send_quick_chat(QuickChats.CHAT_EVERYONE, QuickChats.Custom_Useful_Bumping)
+
+            elif i == 1:
+                self.send_quick_chat(QuickChats.CHAT_EVERYONE, QuickChats.Apologies_Sorry)
+
+            return
+
+        if demoed:
+            self.demoCount += 1
+            print("demoCount")
+            print(self.demoCount)
+
+            if self.demoCount >= 5:
+                i = random.randint(0, 2)
+                if i == 0:
+                    self.send_quick_chat(QuickChats.CHAT_EVERYONE, QuickChats.Reactions_Wow)
+                self.send_quick_chat(QuickChats.CHAT_EVERYONE, QuickChats.Custom_Toxic_DeAlloc)
+
+                return
+
+            if self.demoCount >= 3:
+                self.send_quick_chat(QuickChats.CHAT_EVERYONE, QuickChats.Reactions_Wow)
+                self.send_quick_chat(QuickChats.CHAT_EVERYONE, QuickChats.Reactions_Wow)
+
+            self.send_quick_chat(QuickChats.CHAT_EVERYONE, QuickChats.Reactions_Okay)
+            return
+
+        for p in humanMates:
+            onOpponentHalf = False
+
+            if p.team == 1 and p.physics.location.y < 0:
+                onOpponentHalf = True
+            elif p.team == 0 and p.physics.location.y > 0:
+                onOpponentHalf = True
+
+            d = math.sqrt((p.physics.location.x - packet.game_ball.physics.location.x) ** 2 + (
+                        p.physics.location.y - packet.game_ball.physics.location.y) ** 2)
+            if d < 1000 and self.pesterCount == 0 and onOpponentHalf:
+                self.send_quick_chat(QuickChats.CHAT_EVERYONE, QuickChats.Information_TakeTheShot)
+                self.pesterCount = 120 * 7  # spam but not too much
+                return
+
+        if self.demoCalloutCount > 0:
+            self.demoCalloutCount -= 1
+
+        if self.demoedTickCount > 0:
+            self.demoedTickCount -= 1
+
+        if self.pesterCount > 0:
+            self.pesterCount -= 1
+
+
+
+
