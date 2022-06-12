@@ -299,9 +299,6 @@ class Nexto(BaseAgent):
 
         if demoed:
             self.demoCount += 1
-            print("demoCount")
-            print(self.demoCount)
-
             if self.demoCount >= 5:
                 i = random.randint(0, 2)
                 if i == 0:
