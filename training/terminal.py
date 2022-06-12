@@ -17,6 +17,7 @@ class NectoTerminalCondition(TerminalCondition):
         super().__init__()
         self.no_touch = NoTouchTimeoutCondition(round(30 * 120 / tick_skip))
         self.goal_scored = GoalScoredCondition()
+        self.timeout = TimeoutCondition(round(300 * 120 / tick_skip))  # 5 min max
 
     def reset(self, initial_state: GameState):
         self.no_touch.reset(initial_state)
@@ -29,5 +30,7 @@ class NectoTerminalCondition(TerminalCondition):
             return True
         blue, orange, ticks_left = current_state.inverted_ball.angular_velocity
         if ticks_left < 0 and np.isinf(ticks_left):
+            return True
+        if self.timeout.is_terminal(current_state):
             return True
         return False
