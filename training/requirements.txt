@@ -1,7 +1,7 @@
 wheel==0.36.2
 redis==3.5.3
 numpy==1.20.3
-torch==1.9.0+cu102
+torch==1.11.0
 plotly==5.3.1
 wandb==0.12.1
 matplotlib==3.3.3
@@ -12,6 +12,7 @@ msgpack_numpy==0.4.7.1
 EARL-pytorch==0.5.1
 pillow==8.2.0
 gym==0.18.3
+scipy==1.8.1
 pygame
 keyboard
 rlgym

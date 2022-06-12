@@ -22,6 +22,7 @@ class NectoTerminalCondition(TerminalCondition):
     def reset(self, initial_state: GameState):
         self.no_touch.reset(initial_state)
         self.goal_scored.reset(initial_state)
+        self.timeout.reset(initial_state)
 
     def is_terminal(self, current_state: GameState) -> bool:
         if self.no_touch.is_terminal(current_state):

@@ -20,7 +20,7 @@ config = dict(
     critic_lr=1e-4,
     n_steps=1_000_000,
     batch_size=100_000,
-    minibatch_size=10_000,
+    minibatch_size=12_500,
     epochs=30,
     gamma=0.995,
     iterations_per_save=10,
@@ -38,7 +38,7 @@ if __name__ == "__main__":
     redis_password = os.environ["REDIS_PASSWORD"]
     _, ip = sys.argv
     wandb.login(key=wandb_key)
-    logger = wandb.init(name="necto-v3-test", project="rocket-learn", entity="rolv-arild", id=run_id, config=config)
+    logger = wandb.init(name="necto-v3", project="necto", entity="rolv-arild", id=run_id, config=config)
     torch.manual_seed(logger.config.seed)
 
     redis = Redis(host=ip, password=redis_password)

@@ -78,7 +78,7 @@ class NectoRewardFunction(RewardFunction):
         blue, orange, ticks_left = state.inverted_ball.angular_velocity
         diff = blue - orange
         prob = win_prob(len(state.players) // 2,
-                        [ticks_left / 120] * 2,
+                        [ticks_left / 120],
                         np.clip([diff], -5, 5))[0]
         if np.isinf(ticks_left):  # Goal scored at 0 seconds / in overtime
             if diff > 0:
