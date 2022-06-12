@@ -20,7 +20,7 @@ config = dict(
     critic_lr=1e-4,
     n_steps=1_000_000,
     batch_size=100_000,
-    minibatch_size=20_000,
+    minibatch_size=10_000,
     epochs=30,
     gamma=0.995,
     iterations_per_save=10,
@@ -33,6 +33,7 @@ if __name__ == "__main__":
 
     run_id = None
 
+    # os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
     wandb_key = os.environ["WANDB_KEY"]
     redis_password = os.environ["REDIS_PASSWORD"]
     _, ip = sys.argv
