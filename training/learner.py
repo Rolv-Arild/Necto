@@ -12,7 +12,7 @@ from training.parser import NectoAction
 from training.reward import NectoRewardFunction
 
 from rocket_learn.utils.stat_trackers.common_trackers import Speed, Demos, TimeoutRate, Touch, EpisodeLength, Boost, \
-    BehindBall, TouchHeight
+    BehindBall, TouchHeight, DistToBall
 
 config = dict(
     seed=123,
@@ -24,6 +24,7 @@ config = dict(
     epochs=30,
     gamma=0.995,
     iterations_per_save=10,
+    iterations_per_model=100,
     ent_coef=0.01,
 )
 
@@ -42,7 +43,7 @@ if __name__ == "__main__":
     redis = Redis(host=ip, password=redis_password)
 
     stat_trackers = [
-        Speed(), Demos(), TimeoutRate(), Touch(), EpisodeLength(), Boost(), BehindBall(), TouchHeight()
+        Speed(), Demos(), TimeoutRate(), Touch(), EpisodeLength(), Boost(), BehindBall(), TouchHeight(), DistToBall()
     ]
     rollout_gen = RedisRolloutGenerator("necto",
                                         redis,
@@ -50,6 +51,7 @@ if __name__ == "__main__":
                                         lambda: NectoRewardFunction(),
                                         NectoAction,
                                         save_every=logger.config.iterations_per_save,
+                                        model_every=logger.config.iterations_per_model,
                                         logger=logger,
                                         clear=run_id is None,
                                         max_age=1,

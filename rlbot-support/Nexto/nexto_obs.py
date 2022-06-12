@@ -157,7 +157,6 @@ ANG_VEL = slice(17, 20)
 BOOST, DEMO, ON_GROUND, HAS_FLIP = range(20, 24)
 ACTIONS = range(24, 32)
 
-BOOST_PADS_LENGTH = 34
 BALL_STATE_LENGTH = 18
 PLAYER_CAR_STATE_LENGTH = 13
 PLAYER_TERTIARY_INFO_LENGTH = 10
@@ -242,7 +241,7 @@ class NextoObsBuilder(BatchedObsBuilder):
         kv[..., POS.start + 1:ANG_VEL.stop:3] = ny  # y-components
 
     def batched_build_obs(self, encoded_states: np.ndarray):
-        ball_start_index = 3 + BOOST_PADS_LENGTH
+        ball_start_index = 3 + len(self._boost_locations)
         players_start_index = ball_start_index + BALL_STATE_LENGTH
         player_length = PLAYER_INFO_LENGTH
 

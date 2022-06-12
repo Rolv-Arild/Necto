@@ -45,6 +45,9 @@ class Necto(BaseAgent):
         self.prev_time = 0
         self.kickoff_index = -1
         print('Necto Ready - Index:', index)
+        print("Remember to run Necto at 120fps with vsync off! "
+              "Stable 240/360 is second best if that's better for your eyes")
+        print("Also check out the RLGym Twitch stream to watch live bot training and occasional showmatches!")
 
     def initialize_agent(self):
         # Initialize the rlgym GameState object now that the game is active and the info is available

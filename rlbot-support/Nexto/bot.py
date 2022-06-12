@@ -47,6 +47,8 @@ class Nexto(BaseAgent):
         self.ticks = 0
         self.prev_time = 0
         self.kickoff_index = -1
+        self.field_info = None
+        self.gamemode = None
 
         # toxic handling
         self.isToxic = False
@@ -62,20 +64,37 @@ class Nexto(BaseAgent):
         self.lastPacket = None
 
         print('Nexto Ready - Index:', index)
+        print("Remember to run Nexto at 120fps with vsync off! "
+              "Stable 240/360 is second best if that's better for your eyes")
+        print("Also check out the RLGym Twitch stream to watch live bot training and occasional showmatches!")
 
     def initialize_agent(self):
         # Initialize the rlgym GameState object now that the game is active and the info is available
-        field_info = self.get_field_info()
-        self.obs_builder = NextoObsBuilder(field_info=field_info)
-        self.game_state = GameState(field_info)
+        self.field_info = self.get_field_info()
+        self.obs_builder = NextoObsBuilder(field_info=self.field_info)
+        self.game_state = GameState(self.field_info)
         self.ticks = self.tick_skip  # So we take an action the first tick
         self.prev_time = 0
         self.controls = SimpleControllerState()
         self.action = np.zeros(8)
         self.update_action = True
         self.kickoff_index = -1
+        match_settings = self.get_match_settings()
+        mutators = match_settings.MutatorSettings()
+        # Examples
 
-    def render_attention_weights(self, weights, positions):
+        # Game mode
+        game_modes = (
+            "soccer",
+            "hoops",
+            "dropshot",
+            "hockey",
+            "rumble",
+            "heatseeker"
+        )
+        self.gamemode = game_modes[match_settings.GameMode()]
+
+    def render_attention_weights(self, weights, positions, n=3):
         if weights is None:
             return
         mean_weights = torch.mean(torch.stack(weights), dim=0).numpy()[0][0]
@@ -89,7 +108,7 @@ class Nexto(BaseAgent):
         loc = positions[0] * invert
         mx = mean_weights[~(np.arange(len(mean_weights)) == 1)].max()
         c = 1
-        for i in top[:3]:
+        for i in top[:n]:
             weight = mean_weights[i] / mx
             # print(i, weight)
             dest = positions[i] * invert
@@ -120,6 +139,9 @@ class Nexto(BaseAgent):
             opponents = [p for p in self.game_state.players if p.team_num != self.team]
 
             self.game_state.players = [player] + teammates + opponents
+
+            if self.gamemode == "heatseeker":
+                self._modify_ball_info_for_heatseeker(packet, self.game_state)
 
             obs = self.obs_builder.build_obs(player, self.game_state, self.action)
 
@@ -192,6 +214,27 @@ class Nexto(BaseAgent):
         self.controls.jump = action[5] > 0
         self.controls.boost = action[6] > 0
         self.controls.handbrake = action[7] > 0
+        if self.gamemode == "rumble":
+            self.controls.use_item = np.random.random() > (self.tick_skip / 1200)  # On average once every 10 seconds
+
+    def _modify_ball_info_for_heatseeker(self, packet, game_state):
+        assert self.field_info.num_goals == 2
+        target_goal = self.field_info.goals[self.team].location
+        target_goal = np.array([target_goal.x, target_goal.y, target_goal.z])
+
+        ball_pos = game_state.ball.position
+        ball_vel = game_state.ball.linear_velocity
+        vel_mag = np.linalg.norm(ball_vel)
+
+        current_dir = ball_vel / vel_mag
+
+        goal_dir = target_goal - ball_pos
+        goal_dist = np.linalg.norm(goal_dir)
+        goal_dir = goal_dir / goal_dist
+
+        self.game_state.ball.linear_velocity = 1.1 * vel_mag * (
+                    goal_dir + (current_dir if packet.game_ball.latest_touch.team != self.team else goal_dir)) / 2
+        self.game_state.inverted_ball.linear_velocity = self.game_state.ball.linear_velocity * np.array([-1, -1, 1])
 
 
     def toxicity(self, packet):

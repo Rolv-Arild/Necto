@@ -6,7 +6,7 @@ from gym.spaces import Tuple, Box
 from numba import njit
 from rlgym.utils import ObsBuilder
 from rlgym.utils.action_parsers import DefaultAction
-from rlgym.utils.common_values import BOOST_LOCATIONS, BLUE_TEAM, ORANGE_TEAM
+from rlgym.utils.common_values import BOOST_LOCATIONS
 from rlgym.utils.gamestates import GameState, PlayerData
 
 from rocket_learn.utils.batched_obs_builder import BatchedObsBuilder
@@ -141,7 +141,6 @@ ANG_VEL = slice(17, 20)
 BOOST, DEMO, ON_GROUND, HAS_FLIP, HAS_JUMP = range(20, 25)
 ACTIONS = range(25, 33)
 GOAL_DIFF, TIME_LEFT, IS_OVERTIME = range(33, 36)
-
 
 # BOOST, DEMO, ON_GROUND, HAS_FLIP = range(20, 24)
 # ACTIONS = range(24, 32)
@@ -436,7 +435,7 @@ if __name__ == '__main__':
 
 
     env = rlgym.make(use_injector=True, self_play=True, team_size=3,
-                     obs_builder=CombinedObs(NectoObsBuilder(n_players=6), NectoObsOLD()))
+                     obs_builder=CombinedObs(NectoObsBuilder(Scoreboard(), n_players=6), NectoObsOLD()))
 
     states = []
     actions = [[np.zeros(8)] for _ in range(6)]
@@ -453,7 +452,7 @@ if __name__ == '__main__':
             os.append(o)
         states.append(info["state"])
 
-    obs_b = NectoObsBuilder(n_players=6)
+    obs_b = NectoObsBuilder(Scoreboard(), n_players=6)
 
     enc_states = np.array([encode_gamestate(s) for s in states])
     actions = np.array(actions)

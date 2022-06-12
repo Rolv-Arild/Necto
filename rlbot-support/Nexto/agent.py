@@ -10,7 +10,7 @@ from torch.distributions import Categorical
 class Agent:
     def __init__(self):
         cur_dir = os.path.dirname(os.path.realpath(__file__))
-        with open(os.path.join(cur_dir, "necto-model.pt"), 'rb') as f:
+        with open(os.path.join(cur_dir, "nexto-model.pt"), 'rb') as f:
             self.actor = torch.jit.load(f)
         torch.set_num_threads(1)
         self._lookup_table = self.make_lookup_table()
