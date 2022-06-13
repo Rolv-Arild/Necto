@@ -54,8 +54,10 @@ python -m venv !LocalAppData!\necto\venv
 
 CALL !LocalAppData!\necto\venv\Scripts\activate.bat
 
+REM python -m pip install --upgrade pip
+
 python -m pip install -U git+https://github.com/Rolv-Arild/rocket-learn.git
-python -m pip install -U -r requirements.txt -f https://download.pytorch.org/whl/torch_stable.html
+python -m pip install -U -r requirements.txt -f https://download.pytorch.org/whl/cu113
 
 if !errorlevel! neq 0 pause & exit /b !errorlevel!
 
