@@ -1,70 +1,63 @@
-import sys
-from distutils.util import strtobool
 import argparse
+import random
+import sys
 
 import torch
 from redis import Redis
 from rlgym.envs import Match
-from rlgym.utils.action_parsers import DiscreteAction
-from rlgym.utils.reward_functions.common_rewards import ConstantReward
-from rlgym_tools.extra_action_parsers.kbm_act import KBMAction
 from rlgym_tools.extra_state_setters.augment_setter import AugmentSetter
 
+from rocket_learn.rollout_generator.redis.redis_rollout_worker import RedisRolloutWorker
+from rocket_learn.rollout_generator.redis.utils import _unserialize
+from rocket_learn.utils.scoreboard import Scoreboard
 
-from rocket_learn.rollout_generator.redis_rollout_generator import RedisRolloutWorker, _unserialize
-from rocket_learn.utils.util import ExpandAdvancedObs
 try:
     from rocket_learn.agent.pretrained_agents.human_agent import HumanAgent
 except ImportError:
     pass
 
-from training.learner import WORKER_COUNTER
-from training.obs import NectoObsOLD, NectoObsBuilder
-from training.parser import NectoActionOLD, NectoAction
+from training.obs import NectoObsBuilder
+from training.parser import NectoAction
 from training.reward import NectoRewardFunction
 from training.state import NectoStateSetter
 from training.terminal import NectoTerminalCondition, NectoHumanTerminalCondition
 
 
-def get_match(r, force_match_size, replay_arrays, game_speed=100, human_match=False):
-    # order = (1, 2, 3, 1, 1, 2, 1, 1, 3, 2, 1)  # Close as possible number of agents
-    # order = (1, 1, 2, 1, 1, 2, 3, 1, 1, 2, 3)  # Close as possible with 1s >= 2s >= 3s
-    # After testing, this seems like a more accurate distribution
-    order = (1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1, 2, 1, 3, 1, 2, 3, 1, 2, 1, 3, 1, 2, 1, 3, 2, 1, 3, 2, 1, 1, 3, 2)
-    # order = (1,)
-    team_size = order[r % len(order)]
-    if force_match_size:
-        team_size = force_match_size
+def get_match(r, force_match_size, scoreboard, game_speed=100, human_match=False):
+    if force_match_size is not None:
+        team_size = force_match_size  # TODO
+    else:
+        team_size = 3
 
     terminals = NectoTerminalCondition
     if human_match:
         terminals = NectoHumanTerminalCondition
 
     return Match(
-        # reward_function=NectoRewardFunction(goal_w=1, team_spirit=0., opponent_punish_w=0., boost_lose_w=0),
         reward_function=NectoRewardFunction(),
         terminal_conditions=NectoTerminalCondition(),
-        obs_builder=NectoObsBuilder(6),
+        obs_builder=NectoObsBuilder(scoreboard, 6),
         action_parser=NectoAction(),  # NectoActionTEST(),  # KBMAction()
-        state_setter=AugmentSetter(NectoStateSetter(replay_arrays[team_size - 1])),
-        self_play=True,
-        team_size=team_size,
+        state_setter=AugmentSetter(NectoStateSetter(r)),
+        team_size=3,
+        spawn_opponents=True,
         game_speed=game_speed,
     )
 
 
-def make_worker(host, name, password, limit_threads=True, send_gamestates=False, force_match_size=None,
+def make_worker(host, name, password, limit_threads=True, send_obs=True,
+                send_gamestates=True, force_match_size=None,
                 is_streamer=False, human_match=False):
     if limit_threads:
         torch.set_num_threads(1)
     r = Redis(host=host, password=password)
-    w = r.incr(WORKER_COUNTER) - 1
 
     agents = None
     human = None
 
-    past_prob = .4
-    eval_prob = .02
+    dynamic_gm = True if force_match_size is None else False
+    past_prob = .2
+    eval_prob = .01
     game_speed = 100
 
     if is_streamer:
@@ -78,22 +71,23 @@ def make_worker(host, name, password, limit_threads=True, send_gamestates=False,
         game_speed = 1
         human = HumanAgent()
 
-    replay_arrays = _unserialize(r.get("replay-arrays"))
+    scoreboard = Scoreboard()
 
+    # replay_arrays = _unserialize(r.get("replay-arrays"))
     return RedisRolloutWorker(r, name,
-                              match=get_match(w, force_match_size,
+                              match=get_match(r, force_match_size,
+                                              scoreboard=scoreboard,
                                               game_speed=game_speed,
-                                              replay_arrays=replay_arrays,
                                               human_match=human_match),
+                              dynamic_gm=dynamic_gm,
                               past_version_prob=past_prob,
                               evaluation_prob=eval_prob,
                               send_gamestates=send_gamestates,
+                              send_obs=send_obs,
                               streamer_mode=is_streamer,
                               pretrained_agents=agents,
                               human_agent=human,
-                              sigma_target=2,
-                              deterministic_old_prob=0.1,
-                              deterministic_evaluation=True)
+                              scoreboard=scoreboard)
 
 
 def main():
@@ -132,7 +126,8 @@ def main():
     try:
         worker = make_worker(ip, name, password,
                              limit_threads=True,
-                             send_gamestates=compress,
+                             send_obs=not compress,
+                             send_gamestates=True,
                              force_match_size=force_match_size,
                              is_streamer=stream_state,
                              human_match=human_match)

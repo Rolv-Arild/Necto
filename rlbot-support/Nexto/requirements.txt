@@ -1,0 +1,10 @@
+# Include everything the framework requires
+# You will automatically get updates for all versions starting with "1.".
+rlbot==1.*
+--find-links https://download.pytorch.org/whl/torch_stable.html
+torch==1.9.1+cpu
+rlgym-compat==1.0.2
+numpy
+
+# This will cause pip to auto-upgrade and stop scaring people with warning messages
+pip

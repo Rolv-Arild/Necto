@@ -1,12 +1,13 @@
 import numpy as np
-from rlgym.utils import RewardFunction
-from rlgym.utils.common_values import CEILING_Z, BALL_MAX_SPEED, CAR_MAX_SPEED, BLUE_TEAM, BLUE_GOAL_BACK, \
-    BLUE_GOAL_CENTER, ORANGE_GOAL_BACK, ORANGE_GOAL_CENTER, BALL_RADIUS, ORANGE_TEAM, GOAL_HEIGHT, SIDE_WALL_X, \
-    BACK_WALL_Y
-from rlgym.utils.gamestates import GameState, PlayerData
-from rlgym.utils.math import cosine_similarity
 from numpy import exp
 from numpy.linalg import norm
+from rlgym.utils import RewardFunction
+from rlgym.utils.common_values import CEILING_Z, BALL_MAX_SPEED, CAR_MAX_SPEED, BLUE_GOAL_BACK, \
+    BLUE_GOAL_CENTER, ORANGE_GOAL_BACK, ORANGE_GOAL_CENTER, BALL_RADIUS, ORANGE_TEAM, GOAL_HEIGHT, CAR_MAX_ANG_VEL
+from rlgym.utils.gamestates import GameState, PlayerData
+from rlgym.utils.math import cosine_similarity
+
+from rocket_learn.utils.scoreboard import win_prob
 
 
 class NectoRewardFunction(RewardFunction):
@@ -15,20 +16,21 @@ class NectoRewardFunction(RewardFunction):
 
     def __init__(
             self,
-            team_spirit=0.6,  # 0.3 -> 0.5 -> 0.6
-            goal_w=12.5,  # 10 -> 12.5
-            goal_dist_w=2.5,  # 10 -> 5 -> 2.5
-            goal_speed_bonus_w=1.25,  # 2.5 -> 1.25
-            goal_dist_bonus_w=1.25,  # 2.5 -> 1.25
-            demo_w=5,
-            dist_w=0.,  # 0.75 -> 0.5 -> 0
-            align_w=0.,  # 0.5 -> 0
-            boost_gain_w=0.7,  # 1 -> 0.5 -> 0.7
-            boost_lose_w=0.4,  # 0.5 -> 0.7 -> 0.9
-            touch_grass_w=0,  # 0.005 -> 0
-            touch_height_w=1,  # ~0.9 -> 1 (changed normalization factor) -> (2-on_ground) -> 0.75 (with cbrt) -> 1
-            touch_accel_w=0.,  # 0.5 -> 0
-            flip_reset_w=5,  # 0 -> 5
+            team_spirit=0.3,
+            goal_w=10,
+            win_prob_w=10,
+            goal_dist_w=10,
+            goal_speed_bonus_w=2.5,
+            goal_dist_bonus_w=2.5,
+            demo_w=10,
+            dist_w=2,
+            align_w=0.5,
+            boost_gain_w=1,
+            boost_lose_w=0.,
+            ang_vel_w=0.01,
+            touch_height_w=5,
+            touch_accel_w=0.5,
+            flip_reset_w=10,
             opponent_punish_w=1
     ):
         self.team_spirit = team_spirit
@@ -36,6 +38,7 @@ class NectoRewardFunction(RewardFunction):
         self.last_state = None
         self.n = 0
         self.goal_w = goal_w
+        self.win_prob_w = win_prob_w
         self.goal_dist_w = goal_dist_w
         self.goal_speed_bonus_w = goal_speed_bonus_w
         self.goal_dist_bonus_w = goal_dist_bonus_w
@@ -44,7 +47,7 @@ class NectoRewardFunction(RewardFunction):
         self.align_w = align_w
         self.boost_gain_w = boost_gain_w
         self.boost_lose_w = boost_lose_w
-        self.touch_grass_w = touch_grass_w
+        self.ang_vel_w = ang_vel_w
         self.touch_height_w = touch_height_w
         self.touch_accel_w = touch_accel_w
         self.flip_reset_w = flip_reset_w
@@ -72,15 +75,33 @@ class NectoRewardFunction(RewardFunction):
 
             # TODO use only dist of closest player for entire team?
 
+        blue, orange, ticks_left = state.inverted_ball.angular_velocity
+        diff = blue - orange
+        prob = win_prob(len(state.players) // 2,
+                        [ticks_left / 120],
+                        np.clip([diff], -5, 5))[0]
+        if np.isinf(ticks_left):  # Goal scored at 0 seconds / in overtime
+            if diff > 0:
+                prob = 1
+            elif diff < 0:
+                prob = 0
+            else:
+                prob = 0.5
+        state_quality += self.win_prob_w * prob
+
         # Half state quality because it is applied to both teams, thus doubling it in the reward distributing
         return state_quality / 2, player_qualities
 
     @staticmethod
     def _height_activation(z):
-        return (((float(z) - GOAL_HEIGHT) / CEILING_Z) ** (1 / 3)).real
+        return (((float(z) - 150) / CEILING_Z) ** (1 / 3)).real  # 150 is approximate dribble height
 
-    def _calculate_rewards(self, state: GameState):
+    def pre_step(self, state: GameState):
         # Calculate rewards, positive for blue, negative for orange
+        if state != self.current_state:
+            self.last_state = self.current_state
+            self.current_state = state
+            self.n = 0
         state_quality, player_qualities = self._state_qualities(state)
         player_rewards = np.zeros_like(player_qualities)
         ball_height = state.ball.position[2]
@@ -121,9 +142,12 @@ class NectoRewardFunction(RewardFunction):
             elif car_height < GOAL_HEIGHT:
                 player_rewards[i] += self.boost_lose_w * boost_diff * (1 - car_height / GOAL_HEIGHT)
 
-            # Encourage being in the air (slightly)
-            player_rewards[i] -= player.on_ground * self.touch_grass_w
+            # Encourage spinning (slightly), helps it not stop flipping at the start of training
+            # and (hopefully) explore rotating in the air
+            ang_vel_norm = np.linalg.norm(player.car_data.angular_velocity) / CAR_MAX_ANG_VEL
+            player_rewards[i] += ang_vel_norm * self.ang_vel_w
 
+            # Divide demo reward equally between demoer (positive) and demoee (negative)
             if player.is_demoed and not last.is_demoed:
                 player_rewards[i] -= self.demo_w / 2
             if player.match_demolishes > last.match_demolishes:
@@ -142,26 +166,32 @@ class NectoRewardFunction(RewardFunction):
         # random state could send ball straight into goal
         d_blue = state.blue_score - self.last_state.blue_score
         d_orange = state.orange_score - self.last_state.orange_score
-        if d_blue > 0:
-            goal_speed = norm(self.last_state.ball.linear_velocity)
-            distances = norm(
-                np.stack([p.car_data.position for p in state.players[mid:]])
+        blue, orange, ticks_left = state.inverted_ball.angular_velocity
+        if d_blue > 0 or d_orange > 0 \
+                or ticks_left < 0 and np.isinf(ticks_left):
+            home = slice(None, mid)
+            away = slice(mid, None)
+            new_diff = blue - orange
+            d_home = d_blue
+            if d_orange > 0:
+                home, away = away, home
+                new_diff *= -1
+                d_home = d_orange
+
+            goal_speed = d_home * norm(self.last_state.ball.linear_velocity)
+            distances = d_home * norm(
+                np.stack([p.car_data.position for p in state.players[away]])
                 - self.last_state.ball.position,
                 axis=-1
             )
-            player_rewards[mid:] = -self.goal_dist_bonus_w * (1 - exp(-distances / CAR_MAX_SPEED))
-            player_rewards[:mid] = (self.goal_w * d_blue
-                                    + self.goal_dist_bonus_w * goal_speed / BALL_MAX_SPEED)
-        if d_orange > 0:
-            goal_speed = norm(self.last_state.ball.linear_velocity)
-            distances = norm(
-                np.stack([p.car_data.position for p in state.players[:mid]])
-                - self.last_state.ball.position,
-                axis=-1
-            )
-            player_rewards[:mid] = -self.goal_dist_bonus_w * (1 - exp(-distances / CAR_MAX_SPEED))
-            player_rewards[mid:] = (self.goal_w * d_orange
-                                    + self.goal_dist_bonus_w * goal_speed / BALL_MAX_SPEED)
+
+            # TODO Want to find something better, this could promote waiting to score when losing
+            # print(f"{importance_reward=}, {old_prob=}, {new_prob=}, {ticks_left=}, "
+            #       f"{old_diff=}, {new_diff=}, {blue=}, {orange=}")
+            # assert new_prob >= old_prob and (old_prob >= (0.5 - 1e-10) or new_prob <= (0.5 + 1e-10))
+            player_rewards[away] -= self.goal_dist_bonus_w * (1 - exp(-distances / CAR_MAX_SPEED))
+            player_rewards[home] += (self.goal_w * d_home
+                                     + self.goal_dist_bonus_w * goal_speed / BALL_MAX_SPEED)
 
         blue = player_rewards[:mid]
         orange = player_rewards[mid:]
@@ -184,11 +214,6 @@ class NectoRewardFunction(RewardFunction):
         self.state_quality, self.player_qualities = self._state_qualities(initial_state)
 
     def get_reward(self, player: PlayerData, state: GameState, previous_action: np.ndarray) -> float:
-        if state != self.current_state:
-            self.last_state = self.current_state
-            self.current_state = state
-            self._calculate_rewards(state)
-            self.n = 0
         rew = self.rewards[self.n]
         self.n += 1
         return float(rew)  # / 3.2  # Divide to get std of expected reward to ~1 at start, helps value net a little

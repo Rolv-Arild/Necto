@@ -4,51 +4,60 @@ import sys
 import torch
 import wandb
 from redis import Redis
-from rlgym.utils.action_parsers import DiscreteAction
+from rocket_learn.rollout_generator.redis.redis_rollout_generator import RedisRolloutGenerator
 
-from rocket_learn.rollout_generator.redis_rollout_generator import RedisRolloutGenerator
-from rocket_learn.utils.util import ExpandAdvancedObs
 from training.agent import get_agent
-from training.obs import NectoObsOLD, NectoObsBuilder
-from training.parser import NectoActionOLD, NectoAction
+from training.obs import NectoObsBuilder
+from training.parser import NectoAction
 from training.reward import NectoRewardFunction
 
-WORKER_COUNTER = "worker-counter"
+from rocket_learn.utils.stat_trackers.common_trackers import Speed, Demos, TimeoutRate, Touch, EpisodeLength, Boost, \
+    BehindBall, TouchHeight, DistToBall
 
 config = dict(
     seed=123,
-    actor_lr=5e-5,
-    critic_lr=5e-5,
-    n_steps=2_000_000,
-    batch_size=200_000,
-    minibatch_size=20_000,
+    actor_lr=1e-4,
+    critic_lr=1e-4,
+    n_steps=1_000_000,
+    batch_size=100_000,
+    minibatch_size=12_500,
     epochs=30,
-    gamma=0.9975,
-    iterations_per_save=5,
-    ent_coef=0.005,
+    gamma=0.995,
+    iterations_per_save=10,
+    iterations_per_model=100,
+    ent_coef=0.01,
 )
 
 if __name__ == "__main__":
     from rocket_learn.ppo import PPO
 
-    run_id = "1xtehclu"
+    run_id = None
 
-    _, ip, password = sys.argv
-    wandb.login(key=os.environ["WANDB_KEY"])
-    logger = wandb.init(name="necto-v2", project="necto", entity="rolv-arild", id=run_id, config=config)
+    # os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+    wandb_key = os.environ["WANDB_KEY"]
+    redis_password = os.environ["REDIS_PASSWORD"]
+    _, ip = sys.argv
+    wandb.login(key=wandb_key)
+    logger = wandb.init(name="necto-v3", project="necto", entity="rolv-arild", id=run_id, config=config)
     torch.manual_seed(logger.config.seed)
 
-    redis = Redis(host=ip, password=password)
-    redis.delete(WORKER_COUNTER)  # Reset to 0
+    redis = Redis(host=ip, password=redis_password)
 
-    rollout_gen = RedisRolloutGenerator(redis,
+    stat_trackers = [
+        Speed(), Demos(), TimeoutRate(), Touch(), EpisodeLength(), Boost(), BehindBall(), TouchHeight(), DistToBall()
+    ]
+    rollout_gen = RedisRolloutGenerator("necto",
+                                        redis,
                                         lambda: NectoObsBuilder(6),
                                         lambda: NectoRewardFunction(),
-                                        # lambda: NectoRewardFunction(goal_w=1, team_spirit=0., opponent_punish_w=0., boost_lose_w=0),
                                         NectoAction,
                                         save_every=logger.config.iterations_per_save,
-                                        logger=logger, clear=run_id is None,
-                                        max_age=1, min_sigma=2)
+                                        model_every=logger.config.iterations_per_model,
+                                        logger=logger,
+                                        clear=run_id is None,
+                                        max_age=1,
+                                        stat_trackers=stat_trackers
+                                        )
 
     agent = get_agent(actor_lr=logger.config.actor_lr, critic_lr=logger.config.critic_lr)
 
@@ -65,7 +74,7 @@ if __name__ == "__main__":
     )
 
     if run_id is not None:
-        alg.load("ppos/necto_1652863218.216445/necto_15805/checkpoint.pt")
+        alg.load("")
         alg.agent.optimizer.param_groups[0]["lr"] = logger.config.actor_lr
         alg.agent.optimizer.param_groups[1]["lr"] = logger.config.critic_lr
 

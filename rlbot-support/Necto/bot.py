@@ -24,7 +24,7 @@ KICKOFF_NUMPY = np.array([
 
 
 class Necto(BaseAgent):
-    def __init__(self, name, team, index, beta=1):
+    def __init__(self, name, team, index, beta=1, render=False, hardcoded_kickoffs=False):
         super().__init__(name, team, index)
 
         self.obs_builder = None
@@ -34,6 +34,8 @@ class Necto(BaseAgent):
         # Beta controls randomness:
         # 1=best action, 0.5=sampling from probability, 0=random, -1=worst action, or anywhere inbetween
         self.beta = beta
+        self.render = render
+        self.hardcoded_kickoffs = hardcoded_kickoffs
 
         self.game_state: GameState = None
         self.controls = None
@@ -43,6 +45,9 @@ class Necto(BaseAgent):
         self.prev_time = 0
         self.kickoff_index = -1
         print('Necto Ready - Index:', index)
+        print("Remember to run Necto at 120fps with vsync off! "
+              "Stable 240/360 is second best if that's better for your eyes")
+        print("Also check out the RLGym Twitch stream to watch live bot training and occasional showmatches!")
 
     def initialize_agent(self):
         # Initialize the rlgym GameState object now that the game is active and the info is available
@@ -80,21 +85,18 @@ class Necto(BaseAgent):
         self.renderer.end_rendering()
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
-        # THINGS TO TEST:
-        # Deterministic
-        # Invert boosts
-        # If 2 tick delay works well, try 3 tick etc.
         cur_time = packet.game_info.seconds_elapsed
         delta = cur_time - self.prev_time
         self.prev_time = cur_time
 
-        ticks_elapsed = delta * 120
+        ticks_elapsed = round(delta * 120)
         self.ticks += ticks_elapsed
         self.game_state.decode(packet, ticks_elapsed)
 
-        if self.update_action == 1 and len(self.game_state.players) > self.index:
-            self.update_action = 0
+        if not packet.game_info.is_round_active:
+            self.obs_builder.reset(self.game_state)
 
+        if self.update_action and len(self.game_state.players) > self.index:
             player = self.game_state.players[self.index]
             teammates = [p for p in self.game_state.players if p.team_num == self.team and p != player]
             opponents = [p for p in self.game_state.players if p.team_num != self.team]
@@ -109,14 +111,19 @@ class Necto(BaseAgent):
                 beta = 0  # Celebrate with random actions
             self.action, weights = self.agent.act(obs, beta)
 
-            self.render_attention_weights(weights, obs)
+            if self.render:
+                self.render_attention_weights(weights, obs)
+
+        # if self.ticks >= self.tick_skip - 1:
+        #     self.update_controls(self.action)
 
         if self.ticks >= self.tick_skip:
             self.ticks = 0
             self.update_controls(self.action)
-            self.update_action = 1
+            self.update_action = True
 
-        self.maybe_do_kickoff(packet, ticks_elapsed)
+        if self.hardcoded_kickoffs:
+            self.maybe_do_kickoff(packet, ticks_elapsed)
 
         return self.controls
 
