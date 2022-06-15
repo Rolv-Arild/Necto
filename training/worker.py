@@ -50,7 +50,7 @@ def make_worker(host, name, password, limit_threads=True, send_obs=True,
                 is_streamer=False, human_match=False):
     if limit_threads:
         torch.set_num_threads(1)
-    r = Redis(host=host, password=password)
+    r = Redis(host=host, password=password, socket_timeout=300, retry_on_timeout=True)
 
     agents = None
     human = None
