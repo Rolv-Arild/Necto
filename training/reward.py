@@ -27,7 +27,7 @@ class NectoRewardFunction(RewardFunction):
             align_w=0.5,
             boost_gain_w=1,
             boost_lose_w=0.,
-            ang_vel_w=0.01,
+            ang_vel_w=0.001,
             touch_height_w=5,
             touch_accel_w=0.5,
             flip_reset_w=10,
