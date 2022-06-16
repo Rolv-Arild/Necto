@@ -20,7 +20,7 @@ config = dict(
     critic_lr=1e-4,
     n_steps=1_000_000,
     batch_size=100_000,
-    minibatch_size=12_500,
+    minibatch_size=10_000,
     epochs=30,
     gamma=0.995,
     iterations_per_save=10,
@@ -31,7 +31,7 @@ config = dict(
 if __name__ == "__main__":
     from rocket_learn.ppo import PPO
 
-    run_id = None
+    run_id = "t50zfr9d"
 
     # os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
     wandb_key = os.environ["WANDB_KEY"]
@@ -46,9 +46,9 @@ if __name__ == "__main__":
     stat_trackers = [
         Speed(), Demos(), TimeoutRate(), Touch(), EpisodeLength(), Boost(), BehindBall(), TouchHeight(), DistToBall()
     ]
-    rollout_gen = RedisRolloutGenerator("necto",
+    rollout_gen = RedisRolloutGenerator("tecko",
                                         redis,
-                                        lambda: NectoObsBuilder(6),
+                                        lambda: NectoObsBuilder(None, 6),
                                         lambda: NectoRewardFunction(),
                                         NectoAction,
                                         save_every=logger.config.iterations_per_save,
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     )
 
     if run_id is not None:
-        alg.load("")
+        alg.load("ppos/necto_1655236256.293526/necto_220/checkpoint.pt")
         alg.agent.optimizer.param_groups[0]["lr"] = logger.config.actor_lr
         alg.agent.optimizer.param_groups[1]["lr"] = logger.config.critic_lr
 
