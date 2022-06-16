@@ -54,8 +54,10 @@ python -m venv !LocalAppData!\necto\venv
 
 CALL !LocalAppData!\necto\venv\Scripts\activate.bat
 
+REM python -m pip install --upgrade pip
+
 python -m pip install -U git+https://github.com/Rolv-Arild/rocket-learn.git
-python -m pip install -U -r requirements.txt -f https://download.pytorch.org/whl/torch_stable.html
+python -m pip install -U -r requirements.txt -f https://download.pytorch.org/whl/cu113
 
 if !errorlevel! neq 0 pause & exit /b !errorlevel!
 
@@ -90,27 +92,27 @@ for /L %%i in (1, 1, !instance_num!) do (
 
     REM launch workers in new cmd to make tracking errors easier
     start "!title!" cmd /c python worker.py !helper_name! !ip! !password! --compress ^& pause
-    timeout 45 >nul
+    timeout /t 45 /nobreak >nul
 )
 
 REM if we tend, wait, then close and do it all over again
 if !tending! EQU 1 (
     REM 12 hours in seconds
-    timeout 443200 >nul
+    timeout /t 43200 /nobreak >nul
 
     echo Closing worker instances
     REM kill processes and relaunch
     for %%i in (!process_list!) do (
         echo %%i
         taskkill /FI "WindowTitle eq %%i" /T /F
-        timeout 1 >nul
+        timeout /t 1 >nul
     )
 
     REM double check that all rocket league instances are killed
     taskkill /FI "WindowTitle eq Rocket*" /T /F
 
     echo Closed. Waiting 5 minutes to ensure proper teardown.
-    timeout 300 >nul
+    timeout /t 300 /nobreak >nul
     echo Relaunching worker instances.
     goto :process_launch
 )
