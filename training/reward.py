@@ -23,7 +23,7 @@ class NectoRewardFunction(RewardFunction):
             goal_speed_bonus_w=2.5,
             goal_dist_bonus_w=2.5,
             demo_w=10,
-            dist_w=2,
+            dist_w=0.5,
             align_w=0.5,
             boost_gain_w=1,
             boost_lose_w=0.,

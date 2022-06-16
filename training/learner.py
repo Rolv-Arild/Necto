@@ -74,7 +74,7 @@ if __name__ == "__main__":
     )
 
     if run_id is not None:
-        alg.load("ppos/necto_1655236256.293526/necto_220/checkpoint.pt")
+        alg.load("ppos/necto_1655245203.0680275/necto_400/checkpoint.pt")
         alg.agent.optimizer.param_groups[0]["lr"] = logger.config.actor_lr
         alg.agent.optimizer.param_groups[1]["lr"] = logger.config.critic_lr
 
