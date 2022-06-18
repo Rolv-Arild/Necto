@@ -116,7 +116,7 @@ class NectoStateSetter(StateSetter):
             BetterRandom(),
             DefaultState(),
             KickoffLikeSetter(),
-            GoaliePracticeState(first_defender_in_goal=False, allow_enemy_interference=True),
+            GoaliePracticeState(first_defender_in_goal=True, allow_enemy_interference=True),
             HoopsLikeSetter(),
             WallPracticeState()
         ]
