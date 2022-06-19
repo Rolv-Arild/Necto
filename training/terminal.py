@@ -32,6 +32,7 @@ class NectoTerminalCondition(TerminalCondition):
         blue, orange, ticks_left = current_state.inverted_ball.angular_velocity
         if ticks_left < 0 and np.isinf(ticks_left):
             return True
-        if self.timeout.is_terminal(current_state):
-            return True
+        if ticks_left > 0 and np.isinf(ticks_left) \
+                and self.timeout.is_terminal(current_state):
+            return True  # Limit OT to 5 minutes, normal game is limited by scoreboard
         return False
