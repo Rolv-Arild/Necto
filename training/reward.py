@@ -150,7 +150,7 @@ class NectoRewardFunction(RewardFunction):
             player_rewards[i] += ang_vel_norm * self.ang_vel_w
 
             if player.on_ground and car_height < BALL_RADIUS:
-                player_rewards[i] += self.touch_grass_w
+                player_rewards[i] -= self.touch_grass_w
 
             # Divide demo reward equally between demoer (positive) and demoee (negative)
             if player.is_demoed and not last.is_demoed:
