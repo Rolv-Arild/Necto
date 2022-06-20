@@ -28,6 +28,7 @@ class NectoRewardFunction(RewardFunction):
             boost_gain_w=1,
             boost_lose_w=0.3,
             ang_vel_w=0.005,
+            touch_grass_w=0.005,
             touch_height_w=5,
             touch_accel_w=0.5,
             flip_reset_w=10,
@@ -48,6 +49,7 @@ class NectoRewardFunction(RewardFunction):
         self.boost_gain_w = boost_gain_w
         self.boost_lose_w = boost_lose_w
         self.ang_vel_w = ang_vel_w
+        self.touch_grass_w = touch_grass_w
         self.touch_height_w = touch_height_w
         self.touch_accel_w = touch_accel_w
         self.flip_reset_w = flip_reset_w
@@ -146,6 +148,9 @@ class NectoRewardFunction(RewardFunction):
             # and (hopefully) explore rotating in the air
             ang_vel_norm = np.linalg.norm(player.car_data.angular_velocity) / CAR_MAX_ANG_VEL
             player_rewards[i] += ang_vel_norm * self.ang_vel_w
+
+            if player.on_ground and car_height < BALL_RADIUS:
+                player_rewards[i] += self.touch_grass_w
 
             # Divide demo reward equally between demoer (positive) and demoee (negative)
             if player.is_demoed and not last.is_demoed:
