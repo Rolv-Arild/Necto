@@ -1,9 +1,11 @@
+import random
 from typing import Any
 
 import numpy as np
 from gym import Space
 from gym.spaces import Tuple, Box
 from numba import njit
+from rlgym.gym import Gym
 from rlgym.utils import ObsBuilder
 from rlgym.utils.action_parsers import DefaultAction
 from rlgym.utils.common_values import BOOST_LOCATIONS
@@ -36,8 +38,9 @@ class NectoObsBuilder(BatchedObsBuilder):
     _invert = np.array([1] * 5 + [-1, -1, 1] * 5 + [1] * 5 + [1] * 30)
     _norm = np.array([1.] * 5 + [2300] * 6 + [1] * 6 + [5.5] * 3 + [1, 10, 1, 1, 1] + [1] * 30)
 
-    def __init__(self, scoreboard: Scoreboard, n_players=6, tick_skip=8):
+    def __init__(self, scoreboard: Scoreboard, env: Gym = None, n_players=6, tick_skip=8):
         super().__init__(scoreboard)
+        self.env = env
         self.n_players = n_players
         self.demo_timers = None
         self.boost_timers = None
@@ -49,6 +52,20 @@ class NectoObsBuilder(BatchedObsBuilder):
     def _reset(self, initial_state: GameState):
         self.demo_timers = np.zeros(self.n_players or len(initial_state.players))
         self.boost_timers = np.zeros(len(initial_state.boost_pads))
+        if self.scoreboard is not None and self.scoreboard.random_resets and self.env is not None:
+            self.env.update_settings(boost_consumption=random.random() > 0.01)
+
+    def pre_step(self, state: GameState):
+        if state != self.current_state:
+            if self.scoreboard is not None and self.scoreboard.random_resets and self.env is not None:
+                boost_consumption_rate = self.env._match._boost_consumption  # noqa blame Rangler
+                if boost_consumption_rate <= 0:
+                    for player in state.players:
+                        player.boost_amount = float("inf")
+                else:
+                    for player in state.players:
+                        player.boost_amount /= boost_consumption_rate
+        super(NectoObsBuilder, self).pre_step(state)
 
     def get_obs_space(self) -> Space:
         players = self.n_players or 6
@@ -270,7 +287,7 @@ class NectoObsBuilder(BatchedObsBuilder):
             kv[:, :, i, FW] = rot_mtx[:, :, 0]
             kv[:, :, i, UP] = rot_mtx[:, :, 2]
             kv[:, :, i, ANG_VEL] = encoded_player[:, SC.CAR_ANGULAR_VEL_X.start: SC.CAR_ANGULAR_VEL_Z.start + 1]
-            kv[:, :, i, BOOST] = encoded_player[:, SC.BOOST_AMOUNT.start]
+            kv[:, :, i, BOOST] = np.clip(encoded_player[:, SC.BOOST_AMOUNT.start], 0, 2)
             kv[:, :, i, DEMO] = demo_timers[:, i]
             kv[:, :, i, ON_GROUND] = encoded_player[:, SC.ON_GROUND.start]
             kv[:, :, i, HAS_FLIP] = encoded_player[:, SC.HAS_FLIP.start]
