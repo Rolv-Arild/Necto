@@ -36,7 +36,7 @@ def get_match(r, force_match_size, scoreboard, game_speed=100, human_match=False
     return Match(
         reward_function=NectoRewardFunction(),
         terminal_conditions=NectoTerminalCondition(),
-        obs_builder=NectoObsBuilder(scoreboard, 6),
+        obs_builder=NectoObsBuilder(scoreboard, None, 6),
         action_parser=NectoAction(),  # NectoActionTEST(),  # KBMAction()
         state_setter=AugmentSetter(NectoStateSetter(r)),
         team_size=3,
@@ -74,20 +74,22 @@ def make_worker(host, name, password, limit_threads=True, send_obs=True,
     scoreboard = Scoreboard()
 
     # replay_arrays = _unserialize(r.get("replay-arrays"))
-    return RedisRolloutWorker(r, name,
-                              match=get_match(r, force_match_size,
-                                              scoreboard=scoreboard,
-                                              game_speed=game_speed,
-                                              human_match=human_match),
-                              dynamic_gm=dynamic_gm,
-                              past_version_prob=past_prob,
-                              evaluation_prob=eval_prob,
-                              send_gamestates=send_gamestates,
-                              send_obs=send_obs,
-                              streamer_mode=is_streamer,
-                              pretrained_agents=agents,
-                              human_agent=human,
-                              scoreboard=scoreboard)
+    worker = RedisRolloutWorker(r, name,
+                                match=get_match(r, force_match_size,
+                                                scoreboard=scoreboard,
+                                                game_speed=game_speed,
+                                                human_match=human_match),
+                                dynamic_gm=dynamic_gm,
+                                past_version_prob=past_prob,
+                                evaluation_prob=eval_prob,
+                                send_gamestates=send_gamestates,
+                                send_obs=send_obs,
+                                streamer_mode=is_streamer,
+                                pretrained_agents=agents,
+                                human_agent=human,
+                                scoreboard=scoreboard)
+    worker.env._match._obs_builder.env = worker.env  # noqa hack for infinite boost
+    return worker
 
 
 def main():

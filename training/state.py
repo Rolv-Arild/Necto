@@ -141,3 +141,5 @@ class NectoStateSetter(StateSetter):
             self.replay_setters[len(state_wrapper.cars) // 2 - 1].reset(state_wrapper)
         else:
             self.setters[i - 1].reset(state_wrapper)
+        for car in state_wrapper.cars:  # In case of 0 boost consumption rate we want it to be able to boost
+            car.boost = max(car.boost, 0.01)

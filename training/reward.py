@@ -138,7 +138,8 @@ class NectoRewardFunction(RewardFunction):
                     curr_vel - last_vel) / CAR_MAX_SPEED
 
             # Encourage collecting and saving boost, sqrt to weight boost more the less it has
-            boost_diff = np.sqrt(player.boost_amount) - np.sqrt(last.boost_amount)
+            boost_diff = (np.sqrt(np.clip(player.boost_amount, 0, 1))
+                          - np.sqrt(np.clip(last.boost_amount, 0, 1)))
             if boost_diff >= 0:
                 player_rewards[i] += self.boost_gain_w * boost_diff
             elif car_height < GOAL_HEIGHT:
