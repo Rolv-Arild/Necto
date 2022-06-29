@@ -96,7 +96,7 @@ class NectoRewardFunction(RewardFunction):
 
     @staticmethod
     def _height_activation(z):
-        return (((float(z) - 150) / CEILING_Z) ** (1 / 3)).real  # 150 is approximate dribble height
+        return np.cbrt((float(z) - 150) / CEILING_Z)  # 150 is approximate dribble height
 
     def pre_step(self, state: GameState):
         # Calculate rewards, positive for blue, negative for orange
@@ -124,7 +124,7 @@ class NectoRewardFunction(RewardFunction):
                 h0 = self._height_activation(0)
                 h1 = self._height_activation(CEILING_Z)
                 hx = self._height_activation(avg_height)
-                height_factor = (hx - h0) / (h1 - h0)
+                height_factor = ((hx - h0) / (h1 - h0)) ** 2
                 player_rewards[i] += self.touch_height_w * (2 - player.on_ground) * height_factor
                 if player.has_flip and not last.has_flip \
                         and player.car_data.position[2] > 3 * BALL_RADIUS \
