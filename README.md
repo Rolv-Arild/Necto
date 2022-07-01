@@ -6,7 +6,7 @@
 
 This is Tecko, our community machine learning Rocket League bot. 
 This is the 3rd generation of the bot and its learning to play 1's, 2's, and 3's thanks to RLGym.
-Our end goalis making a version that can take down pros!
+Our end goal is making a version that can take down pros!
 
 Fun fact, Tecko has the same number of neurons as a real life gecko!
 
