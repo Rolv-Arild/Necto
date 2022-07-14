@@ -4,6 +4,9 @@ import sys
 
 import torch
 from redis import Redis
+from redis.retry import Retry
+from redis.exceptions import TimeoutError, ConnectionError
+from redis.backoff import EqualJitterBackoff
 from rlgym.envs import Match
 from rlgym_tools.extra_state_setters.augment_setter import AugmentSetter
 
@@ -50,7 +53,9 @@ def make_worker(host, name, password, limit_threads=True, send_obs=True,
                 is_streamer=False, human_match=False):
     if limit_threads:
         torch.set_num_threads(1)
-    r = Redis(host=host, password=password, socket_timeout=300, retry_on_timeout=True)
+
+    r = Redis(host=host, password=password, socket_timeout=300, health_check_interval=30,
+              retry_on_error=(ConnectionError, TimeoutError), retry=Retry(EqualJitterBackoff(cap=10, base=1), retries=-1))
 
     agents = None
     human = None
