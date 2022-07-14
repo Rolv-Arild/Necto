@@ -96,7 +96,7 @@ class NectoRewardFunction(RewardFunction):
 
     @staticmethod
     def _height_activation(z):
-        return (((float(z) - 150) / CEILING_Z) ** (1 / 3)).real  # 150 is approximate dribble height
+        return np.cbrt((float(z) - 150) / CEILING_Z)  # 150 is approximate dribble height
 
     @staticmethod
     def dist_to_closest_wall(x, y):
@@ -158,7 +158,7 @@ class NectoRewardFunction(RewardFunction):
                 h0 = self._height_activation(0)
                 h1 = self._height_activation(CEILING_Z)
                 hx = self._height_activation(avg_height)
-                height_factor = (hx - h0) / (h1 - h0)
+                height_factor = ((hx - h0) / (h1 - h0)) ** 2
                 wall_dist_factor = 1 - np.exp(-self.dist_to_closest_wall(*player.car_data.position[:2]) / CAR_MAX_SPEED)
                 player_rewards[i] += self.touch_height_w * height_factor * (1 + wall_dist_factor)
                 if player.has_flip and not last.has_flip \
