@@ -98,6 +98,40 @@ class NectoRewardFunction(RewardFunction):
     def _height_activation(z):
         return (((float(z) - 150) / CEILING_Z) ** (1 / 3)).real  # 150 is approximate dribble height
 
+    @staticmethod
+    def dist_to_closest_wall(x, y):
+        dist_side_wall = abs(4096 - abs(x))
+        dist_back_wall = abs(5120 - abs(y))
+
+        # From https://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
+        x1, y1, x2, y2 = 4096 - 1152, 5120, 4096, 5120 - 1152  # Line segment for corner
+        A = abs(x) - x1
+        B = abs(y) - y1
+        C = x2 - x1
+        D = y2 - y1
+
+        dot = A * C + B * D
+        len_sq = C * C + D * D
+        param = -1
+        if len_sq != 0:  # in case of 0 length line
+            param = dot / len_sq
+
+        if param < 0:
+            xx = x1
+            yy = y1
+        elif param > 1:
+            xx = x2
+            yy = y2
+        else:
+            xx = x1 + param * C
+            yy = y1 + param * D
+
+        dx = abs(x) - xx
+        dy = abs(y) - yy
+        dist_corner_wall = np.sqrt(dx * dx + dy * dy)
+
+        return min(dist_side_wall, dist_back_wall, dist_corner_wall)
+
     def pre_step(self, state: GameState):
         # Calculate rewards, positive for blue, negative for orange
         if state != self.current_state:
@@ -125,7 +159,8 @@ class NectoRewardFunction(RewardFunction):
                 h1 = self._height_activation(CEILING_Z)
                 hx = self._height_activation(avg_height)
                 height_factor = (hx - h0) / (h1 - h0)
-                player_rewards[i] += self.touch_height_w * (2 - player.on_ground) * height_factor
+                wall_dist_factor = 1 - np.exp(-self.dist_to_closest_wall(*player.car_data.position[:2]) / CAR_MAX_SPEED)
+                player_rewards[i] += self.touch_height_w * height_factor * (1 + wall_dist_factor)
                 if player.has_flip and not last.has_flip \
                         and player.car_data.position[2] > 3 * BALL_RADIUS \
                         and np.linalg.norm(state.ball.position - player.car_data.position) < 2 * BALL_RADIUS \
