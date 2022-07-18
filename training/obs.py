@@ -53,7 +53,7 @@ class NectoObsBuilder(BatchedObsBuilder):
         self.demo_timers = np.zeros(self.n_players or len(initial_state.players))
         self.boost_timers = np.zeros(len(initial_state.boost_pads))
         if self.scoreboard is not None and self.scoreboard.random_resets and self.env is not None:
-            self.env.update_settings(boost_consumption=random.random() > 0.01)
+            self.env.update_settings(boost_consumption=random.random() > 0.02)
 
     def pre_step(self, state: GameState):
         if state != self.current_state:
