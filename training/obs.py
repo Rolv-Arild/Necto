@@ -50,6 +50,12 @@ class NectoObsBuilder(BatchedObsBuilder):
         self.tick_skip = tick_skip
 
     def _reset(self, initial_state: GameState):
+        """
+        Reset Demolition timers and Boost timers of the observation builder to match initial state
+
+        Args:
+            initial_state (GameState)
+        """
         self.demo_timers = np.zeros(self.n_players or len(initial_state.players))
         self.boost_timers = np.zeros(len(initial_state.boost_pads))
         if self.scoreboard is not None and self.scoreboard.random_resets and self.env is not None:
@@ -78,7 +84,17 @@ class NectoObsBuilder(BatchedObsBuilder):
 
     @staticmethod
     def _quats_to_rot_mtx(quats: np.ndarray) -> np.ndarray:
-        # From rlgym.utils.math.quat_to_rot_mtx
+        """
+        Adapted from rlgym.utils.math.quat_to_rot_mtx
+
+        Convert quaternion to rotation matrix
+
+        Args:
+            quats (np.ndarray): Quaternion array
+
+        Returns (np.ndarray):
+            Numpy ndarray with rotation matrix
+        """
         w = -quats[:, 0]
         x = -quats[:, 1]
         y = -quats[:, 2]
@@ -116,6 +132,13 @@ class NectoObsBuilder(BatchedObsBuilder):
 
     @staticmethod
     def convert_to_relative(q, kv):
+        """
+        Convert forward direction in keys_and_values array to relative direction according to x and y
+
+        Args:
+            q (np.ndarray): Queries
+            kv (np.ndarray): Keys and Values
+        """
         kv[..., POS.start:LIN_VEL.stop] -= q[..., POS.start:LIN_VEL.stop]
         # kv[..., POS] -= q[..., POS]
         forward = q[..., FW]
@@ -203,6 +226,77 @@ class NectoObsBuilder(BatchedObsBuilder):
                     demo_timers[i, b] = 0
 
     def batched_build_obs(self, encoded_states: np.ndarray):
+                """
+        Build observation
+
+        - Observation array composition:
+            [0, 3]
+            [3, 34] -> Boosts Info
+            [34, 52] -> Ball Info
+            [52, ...] -> Cars and Players Info
+            (check GameState class for more info)
+
+        - Selectors
+            sel_players = [0 -> number_of_players]
+            sel_ball = [number_of_players] (sel_players.stop)
+            sel_boosts = [sel_ball + 1 -> end_of_array]
+
+        - Main arrays
+            queries -> [number_of_players, batch_size, 1, 32]
+                32 is the game state info with the actions (check ACTIONS definition above for more info)
+
+            keys_and_values -> [number_of_players, batch_size, number_of_entities, 24]
+                24 is the game state info without the actions (check ACTIONS definition above for more info)
+
+            mask -> [number_of_players, batch_size, number_of_entities]
+
+            NOTE: number_of_entities = number of players + 1 ball + 34 boosts
+
+        - Ball
+            keys_and_values[:, :, sel_ball, IS_BALL] = 1
+
+            ball_info = np.r_[POS, LIN_VEL, ANG_VEL] = [5 -> 8, 8 -> 11, 17 -> 20]
+                9 positions representing the ball values
+
+            keys_and_values[:, :, sel_ball, ball_info] = encoded_states[:, ball_start_index: ball_start_index + 9]
+                9 positions representing the ball values
+
+        - Boosts
+            keys_and_values[:, :, sel_boosts, IS_BOOST] = 1
+
+            keys_and_values[:, :, sel_boosts, POS] = self._boost_locations
+
+            keys_and_values[:, :, sel_boosts, BOOST] = 0.12 + 0.88 * (self._boost_locations[:, 2] > 72)
+                Small boost pads give 12 (0.12) boost, while Big boost pads give 100 (1)
+                (self._boost_locations[:, 2] > 72) -> Big boost pads have higher Z axis (check BOOST_LOCATIONS on
+                    rlgym/utils/common_values for more info)
+
+            keys_and_values[:, :, sel_boosts, DEMO] = encoded_states[:, 3:3 + 34]
+                [3, 34] -> Boosts Info
+                DEMO here is like the cars (the boost is on cooldown or not)
+
+        - Teams
+            teams = encoded_states[0, players_start_index + 1::player_length]
+                teams = blue cars
+
+            keys_and_values[:, :, :number_of_players, IS_MATE] = 1 - teams
+                Sets Orange team players bool to true
+
+            keys_and_values[:, :, :number_of_players, IS_OPP] = teams
+                Sets Blue team players bool to true
+
+        - Player (player ID identified by i)
+                encoded_player = encoded_states[:, players_start_index + i * player_length:
+                                                players_start_index + (i + 1) * player_length]
+                    Get info of respective player
+                    Then use it to set the remaining of the variables
+
+        Args:
+            encoded_states (np.ndarray)
+
+        Returns:
+            List with tuples of queries, keys_and_values, mask for each player
+        """
         if self.boost_timers is None or self.demo_timers is None:
             # if obs is being rebuilt, need to generate timers
             #
@@ -262,7 +356,7 @@ class NectoObsBuilder(BatchedObsBuilder):
         q[:, :, 0, IS_OVERTIME] = is_overtime
 
         # BALL
-        kv[:, :, sel_ball, 3] = 1
+        kv[:, :, sel_ball, IS_BALL] = 1
         kv[:, :, sel_ball, np.r_[POS, LIN_VEL, ANG_VEL]] = encoded_states[:, ball_start_index: ball_start_index + 9]
 
         # BOOSTS
@@ -310,6 +404,16 @@ class NectoObsBuilder(BatchedObsBuilder):
         return [(q[i], kv[i], m[i]) for i in range(n_players)]
 
     def add_actions(self, obs: Any, previous_actions: np.ndarray, player_index=None):
+        """
+        Modify current obs to include action
+
+        player_index=None means actions for all players should be provided
+
+        Args:
+            obs (Any): Current Observation
+            previous_actions (np.ndarray)
+            player_index (int): Player index identifying the respective agent to add the actions to
+        """
         if player_index is None:
             for (q, kv, m), act in zip(obs, previous_actions):
                 q[:, 0, ACTIONS] = act

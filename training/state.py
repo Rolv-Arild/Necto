@@ -43,6 +43,22 @@ class BetterRandom(StateSetter):  # Random state with some triangular distributi
         super().__init__()
 
     def reset(self, state_wrapper: StateWrapper):
+        """
+        Sets the following conditions:
+            - Ball random position [uniform]
+            - Ball random velocity with exponential distribution (higher velocity has less probability) [exponential]
+            - Ball random angular velocity [triangular]
+            - Car random position with usually 1 second away from ball (at max speed) [uniform]
+                -> Fall back to random if out of field
+            - Car random velocity [triangular]
+            - Car random pitch and roll [triangular]
+            - Car random yaw [uniform]
+            - Car random angular velocity [triangular]
+            - Car random boost amount [uniform]
+
+        Args:
+            state_wrapper (StateWrapper): Data class to permit the manipulation of environment variables.
+        """
         state_wrapper.ball.set_pos(
             x=np.random.uniform(-LIM_X, LIM_X),
             y=np.random.uniform(-LIM_Y, LIM_Y),
@@ -89,6 +105,12 @@ class BetterRandom(StateSetter):  # Random state with some triangular distributi
 
 class NectoReplaySetter(ReplaySetter):
     def generate_probabilities(self):
+        """
+        Gives higher probability to states involving aerial plays
+
+        Returns:
+            Weight probabilities for each possible state
+        """
         ball_heights = self.states[:, 2]
         player_heights = self.states[:, 9 + 2::13]
         weights = 1 + 10 * (ball_heights + player_heights.sum(axis=-1)) / CEILING_Z
@@ -106,6 +128,19 @@ class NectoStateSetter(StateSetter):
             hoops_prob=0.04,
             wall_prob=0.05
     ):  # add goalie_prob/shooting/dribbling?
+        """
+        Define probability of each state setter
+
+        Args:
+            replay_array (str/np.ndarray): A file string or a numpy ndarray of states for a single game mode.
+            replay_prob (float)
+            random_prob (float)
+            kickoff_prob (float)
+            kickofflike_prob (float)
+            goalie_prob (float)
+            hoops_prob (float)
+            wall_prob (float)
+        """
         super().__init__()
         self.redis = redis
         self.replay_setters = [
@@ -133,6 +168,12 @@ class NectoStateSetter(StateSetter):
     #     return StateWrapper(blue_count=team_size, orange_count=team_size)
 
     def reset(self, state_wrapper: StateWrapper):
+        """
+        Sets state according to the probabilities of each state setter
+
+        Args:
+            state_wrapper (StateWrapper): Data class to permit the manipulation of environment variables.
+        """
         # counts = self.redis.hgetall(EXPERIENCE_COUNTER_KEY)
         # gamemode = int(min(counts, key=counts.get)[:1])
         # # FIXME: Generate state wrapper from gamemode
