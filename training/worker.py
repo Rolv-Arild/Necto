@@ -50,7 +50,7 @@ def get_match(r, force_match_size, scoreboard, game_speed=100, human_match=False
 
 def make_worker(host, name, password, limit_threads=True, send_obs=True,
                 send_gamestates=True, force_match_size=None,
-                is_streamer=False, human_match=False):
+                is_streamer=False, deterministic=False, human_match=False):
     if limit_threads:
         torch.set_num_threads(1)
 
@@ -69,6 +69,7 @@ def make_worker(host, name, password, limit_threads=True, send_obs=True,
         past_prob = 0
         eval_prob = 0
         game_speed = 1
+        is_streamer += deterministic
 
     if human_match:
         past_prob = 0
@@ -112,6 +113,8 @@ def main():
                         help='compress sent data')
     parser.add_argument('--streamer_mode', action='store_true',
                         help='Start a streamer match, dont learn with this instance')
+    parser.add_argument('--deterministic', action='store_true',
+                        help='Deterministic streamer mode')
     parser.add_argument('--force_match_size', type=int, nargs='?', metavar='match_size',
                         help='Force a 1s, 2s, or 3s game')
     parser.add_argument('--human_match', action='store_true',
@@ -124,11 +127,14 @@ def main():
     password = args.password.replace("'", "")
     compress = args.compress
     stream_state = args.streamer_mode
+    deterministic = args.deterministic
     force_match_size = args.force_match_size
     human_match = args.human_match
 
     if force_match_size is not None and (force_match_size < 1 or force_match_size > 3):
         parser.error("Match size must be between 1 and 3")
+    if deterministic and not stream_state:
+        parser.error("Deterministic mode is only available in streamer mode")
 
     worker = make_worker(ip, name, password,
                          limit_threads=True,
@@ -136,6 +142,7 @@ def main():
                          send_gamestates=True,
                          force_match_size=force_match_size,
                          is_streamer=stream_state,
+                         deterministic=deterministic,
                          human_match=human_match)
 
     try:
