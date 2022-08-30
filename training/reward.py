@@ -16,7 +16,7 @@ class NectoRewardFunction(RewardFunction):
 
     def __init__(
             self,
-            team_spirit=0.5,
+            team_spirit=0.6,
             goal_w=10,
             win_prob_w=10,
             goal_dist_w=10,
@@ -26,10 +26,10 @@ class NectoRewardFunction(RewardFunction):
             dist_w=0.25,
             align_w=0.25,
             boost_gain_w=1.5,
-            boost_lose_w=0.6,
+            boost_lose_w=0.8,
             ang_vel_w=0.005,
             touch_grass_w=0.005,
-            touch_height_w=5,
+            touch_height_w=3,
             touch_accel_w=0.5,
             flip_reset_w=10,
             opponent_punish_w=1
