@@ -15,7 +15,7 @@ V3: Tecko - Canceled due to lack of improvement.  </br>
 V4: N/A - Moved to new project. </br>
 
 Some videos:
-- [2v1 showmatches against pros on our YouTube channel](https://www.youtube.com/c/RLGym/videos).
+- [2v1 showmatches against pros on our YouTube channel](https://www.youtube.com/c/RLGym/videos)
 - [SunlessKhan going up against Nexto](https://www.youtube.com/watch?v=owhz5RSX0go)
 - [Rocket Sledge pitting Grand Champions against Nexto](https://www.youtube.com/watch?v=LO4h8djNB50&)
 - [Rocket Science's video about how Nexto works and some exploits](https://www.youtube.com/watch?v=jQHt2O0PkCQ&t=518s)
