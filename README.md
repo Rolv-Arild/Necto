@@ -1,27 +1,25 @@
 
-![Necto Half-Flip In Action](https://github.com/Rolv-Arild/Necto/blob/master/nectoGifs/nectoHalfFlip.gif)
+![Nexto Teamplay](https://github.com/Rolv-Arild/Necto/blob/master/nectoGifs/nexto-clip.gif)
 
 
 # What is this?
 
-This is Tecko, our community machine learning Rocket League bot. 
-This is the 3rd generation of the bot and its learning to play 1's, 2's, and 3's thanks to RLGym.
+This is Necto, our community machine learning Rocket League bot. 
+It has learned to play 1's, 2's, and 3's thanks to [RLGym](https://github.com/lucas-emery/rocket-league-gym).
 Our end goal is making a version that can take down pros!
 
-Fun fact, Tecko has the same number of neurons some real life geckos!
+So far, we've made 3 versions: </br>
+V1: Necto - Around Diamond level. </br>
+V2: Nexto - Approximately Grand Champion 1 level in 1v1, 2v2 and 3v3 (top 0.12%, 0.95%, 0.46% of the playerbase respectively)  </br>
+V3: Tecko - Canceled due to lack of improvement.  </br>
+V4: N/A - Moved to new project. </br>
 
-V1: Necto <br/>
-V2: Nexto <br/>
-V3: IN PROGRESS: Tecko <br/>
-V4: IN PROGRESS: SSL/Pro Trained<br/>
-
-
-[Watch Nexto V2 go up against RLCS Pros FairyPeak, Breezi, Aztral, Kaydop, and more on our YouTube channel!](https://www.youtube.com/c/RLGym/videos)
-
-[SunlessKhan](https://www.youtube.com/watch?v=owhz5RSX0go) and [Rocket Sledge](https://www.youtube.com/watch?v=LO4h8djNB50&t=387s)
-have both made videos about Nexto!
-
-[Watch Necto V1 win the 2022 RLBot Championship!](https://youtu.be/XVIxZA6gFRI?t=13753)
+Some videos:
+- [2v1 showmatches against pros on our YouTube channel](https://www.youtube.com/c/RLGym/videos).
+- [SunlessKhan going up against Nexto](https://www.youtube.com/watch?v=owhz5RSX0go)
+- [Rocket Sledge pitting Grand Champions against Nexto](https://www.youtube.com/watch?v=LO4h8djNB50&)
+- [Rocket Science's video about how Nexto works and some exploits](https://www.youtube.com/watch?v=jQHt2O0PkCQ&t=518s)
+- [Watch Necto V1 win the 2022 RLBot Championship](https://youtu.be/XVIxZA6gFRI)
 
 # How does it work?
 
@@ -38,34 +36,24 @@ Yup! Go download the [RLBot pack](https://rlbot.org/) and Nexto and Necto are so
  Make sure fps is set to 120 and VSync is turned off.
 
 
-# What Rocket League rank is the bot?
-
-Tecko is still being trained so we don't yet know.
-
-Nexto is low-mid Grand Champion, depending on the version
-
-Necto is around high Diamond. 
-
-
-
 # Can I watch it learn?
 
-Check out our [Twitch stream here](https://www.twitch.tv/rlgym).
+We are currently not training it, but Necto/Nexto/Tecko were shown on our [Twitch stream](https://www.twitch.tv/rlgym), which is currently streaming other bots training.
 
-[Graphs are also available](https://wandb.ai/rolv-arild/rocket-learn) for our fellow nerds.
+[Graphs are also available](https://wandb.ai/rolv-arild/necto) for our fellow nerds.
 
 
 # Could it learn by looking at Pro/SSL replays?
 
-Yes! The recent breakthrough in [Video PreTraining](https://arxiv.org/abs/2206.11795) has allowed us start building a model that's seen years of gameplay before
+Yes! Inspired by [Video PreTraining](https://arxiv.org/abs/2206.11795), we can now use replay files to learn from human gameplay and see years of gameplay before
 setting a wheel on the field. Occasionally, we showcase its progress on our Twitch stream. In the future, we plan to follow up this "jumpstarted" training with live reinforcement learning.
 
-[Here's an explanation of how it all works.](https://www.youtube.com/watch?v=oz5yZc9ULAc)
+[Here's a repository containing code and explanation](https://www.youtube.com/watch?v=oz5yZc9ULAc)
 
 
 # Could it learn by playing against me?
 
-We're working on it! 
+In theory it could, however in practice the rate at which we can collect data by pitting them against each other at high speed would be very hard to match by using humans (we'd need hundreds of people playing at once). The humans would ideally also be approximately equal skill to the bot at all points.
 
 
 # Can I donate my compute to help it learn faster?
@@ -73,9 +61,9 @@ We're working on it!
 We're currently not accepting compute donations but thanks for your interest!
 
 
-# What is Nexto++?
+# What is Nexto+?
 
-Nexto++ is a secret post-training upgrade to Nexto that increases its already impressive skill. It is not available for play but may make appearances in future RLBot tournaments.
+Nexto+ is a secret post-training upgrade to Nexto that increases its already impressive skill. It is not available for play but may make appearances in future RLBot tournaments.
 
 
 # What is Toxic Nexto?
