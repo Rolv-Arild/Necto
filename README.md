@@ -48,7 +48,7 @@ We are currently not training it, but Necto/Nexto/Tecko were shown on our [Twitc
 Yes! Inspired by [Video PreTraining](https://arxiv.org/abs/2206.11795), we can now use replay files to learn from human gameplay and see years of gameplay before
 setting a wheel on the field. Occasionally, we showcase its progress on our Twitch stream. In the future, we plan to follow up this "jumpstarted" training with live reinforcement learning.
 
-[Here's a repository containing code and explanation](https://www.youtube.com/watch?v=oz5yZc9ULAc)
+[Here's a repository containing code and explanation](https://github.com/Rolv-Arild/replay-pretraining)
 
 
 ## Could it learn by playing against me?
