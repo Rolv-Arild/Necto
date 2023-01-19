@@ -68,7 +68,7 @@ Nexto+ is a secret post-training upgrade to Nexto that increases its already imp
 
 ## What is Toxic Nexto?
 
-Toxix Nexto is a version of Nexto at the same skill level but provides that authentic Rocket League experience of harsh words and bad vibes. Its equally mean to its opponents as to its teammates.
+Toxic Nexto is a version of Nexto at the same skill level but provides that authentic Rocket League experience of harsh words and bad vibes. It's equally mean to its opponents as to its teammates.
 
 It can be played against in the RLBot pack.
 
