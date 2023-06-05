@@ -58,7 +58,80 @@ class NectoRewardFunction(RewardFunction):
         self.player_qualities = None
         self.rewards = None
 
+    @staticmethod
+    def _height_activation(z):
+        return (((float(z) - GOAL_HEIGHT) / CEILING_Z) ** (1 / 3)).real
+
+    def _calculate_rewards(self, state: GameState):
+        """
+        Calculates rewards for the players
+
+        - Flow:
+            Calculate state quality based on ball and player positions
+            Calculate either:
+                - Goal Reward
+                - Individual Player Rewards + Add state quality to players rewards
+            Calculate reward based on Team Spirit and Opponent Punishment
+
+        Args:
+            state (GameState)
+        """
+        # Calculate rewards, positive for blue, negative for orange
+        state_quality, player_qualities = self._state_qualities(state)
+        player_rewards = np.zeros_like(player_qualities)
+        mid = len(player_rewards) // 2
+
+        # Handle goals with no scorer for critic consistency,
+        # random state could send ball straight into goal
+        d_blue = state.blue_score - self.last_state.blue_score
+        d_orange = state.orange_score - self.last_state.orange_score
+
+        # Either add goal reward (new episode started) or calculate other rewards
+        if d_blue or d_orange:
+            player_rewards[:mid], player_rewards[mid:] = self._goal_reward(d_blue, d_orange, state, mid)
+
+        else:
+            for i, player in enumerate(state.players):
+                player_rewards[i] += self._calculate_player_rewards(i, player, state)
+
+            player_rewards += player_qualities - self.player_qualities
+            player_rewards[:mid] += state_quality - self.state_quality
+            player_rewards[mid:] -= state_quality - self.state_quality
+
+        blue = player_rewards[:mid]
+        orange = player_rewards[mid:]
+        bm = np.nan_to_num(blue.mean())
+        om = np.nan_to_num(orange.mean())
+
+        player_rewards[:mid] = ((1 - self.team_spirit) * blue + self.team_spirit * bm
+                                - self.opponent_punish_w * om)
+        player_rewards[mid:] = ((1 - self.team_spirit) * orange + self.team_spirit * om
+                                - self.opponent_punish_w * bm)
+
+        self.player_qualities = player_qualities
+        self.state_quality = state_quality
+        self.last_state = state
+        self.rewards = player_rewards
+
     def _state_qualities(self, state: GameState):
+        """
+        Get continuous rewards based on game state representing the state quality
+
+        - Rewards
+            State:
+                Distance from ball to goal
+            Player:
+                Distance from player to ball
+                Alignment of: Player -> Ball -> Goal
+
+        Args:
+            state (GameState)
+
+        Returns:
+            Tuple [float, np.array]
+                - state quality/2 (has it is given to both teams, thus doubling it in the reward distributing)
+                - players qualities
+        """
         ball_pos = state.ball.position
 
         state_quality = 0.5 * self.goal_dist_w * (exp(-norm(self.ORANGE_GOAL - ball_pos) / CAR_MAX_SPEED)
@@ -234,27 +307,122 @@ class NectoRewardFunction(RewardFunction):
             player_rewards[home] += (self.goal_w * d_home
                                      + self.goal_dist_bonus_w * goal_speed / BALL_MAX_SPEED)
 
-        blue = player_rewards[:mid]
-        orange = player_rewards[mid:]
-        bm = np.nan_to_num(blue.mean())
-        om = np.nan_to_num(orange.mean())
+        return blue_reward, orange_reward
 
-        player_rewards[:mid] = ((1 - self.team_spirit) * blue + self.team_spirit * bm
-                                - self.opponent_punish_w * om)
-        player_rewards[mid:] = ((1 - self.team_spirit) * orange + self.team_spirit * om
-                                - self.opponent_punish_w * bm)
+    def _calculate_player_rewards(self, i: int, player: PlayerData, state: GameState) -> float:
+        """
+        Calculate individual player reward based on
+            - Ball touched
+            - Boost amount
+            - Being in the air
+            - Being demoed or demoing someone
 
-        self.last_state = state
-        self.rewards = player_rewards
+        Args:
+            i (int): Index of player in the players array
+            player (PlayerData)
+            state (GameState)
 
-    def reset(self, initial_state: GameState):
-        self.n = 0
-        self.last_state = None
-        self.rewards = None
-        self.current_state = initial_state
-        self.state_quality, self.player_qualities = self._state_qualities(initial_state)
+        Returns:
+            Float with respective reward
+        """
+        last = self.last_state.players[i]
+        car_height = player.car_data.position[2]
+        ball_height = state.ball.position[2]
+
+        player_reward = 0
+
+        if player.ball_touched:
+            player_reward += self._ball_touched_reward(player, state, last.has_flip, car_height, ball_height)
+
+        player_reward += self._boost_reward(player, last, car_height)
+
+        # Encourage being in the air (slightly)
+        player_reward -= player.on_ground * self.touch_grass_w
+
+        if player.is_demoed and not last.is_demoed:
+            player_reward -= self.demo_w / 2
+        if player.match_demolishes > last.match_demolishes:
+            player_reward += self.demo_w / 2
+
+        return player_reward
+
+    def _ball_touched_reward(self, player: PlayerData, state: GameState, player_last: PlayerData,
+                             car_height, ball_height) -> float:
+        """
+        Player Reward for touching the ball, how it affected the ball velocity and possible flip reset
+
+        On the ground, player receives 0.04 for touching the ball
+            plus extra for the speed it produces on the ball velocity
+
+        On top of car ball is close to z=150, resulting in 1 reward for each 1 second of dribbling
+
+        Args:
+            player (PlayerData)
+            state (GameState)
+            player_last (PlayerData)
+
+        Returns:
+            Float with respective reward
+        """
+        curr_vel = self.current_state.ball.linear_velocity
+        last_vel = self.last_state.ball.linear_velocity
+
+        # Close to 20 in the limit with ball on top, but opponents should learn to challenge way before that
+        avg_height = 0.5 * (car_height + ball_height)
+        h0 = self._height_activation(0)
+        h1 = self._height_activation(CEILING_Z)
+        hx = self._height_activation(avg_height)
+        height_factor = (hx - h0) / (h1 - h0)
+        reward = self.touch_height_w * (2 - player.on_ground) * height_factor
+
+        if player.has_flip and not player_last.has_flip \
+                and player.car_data.position[2] > 3 * BALL_RADIUS \
+                and np.linalg.norm(state.ball.position - player.car_data.position) < 2 * BALL_RADIUS \
+                and cosine_similarity(state.ball.position - player.car_data.position,
+                                      -player.car_data.up()) > 0.9:
+            reward += self.flip_reset_w
+
+        # Changing speed of ball from standing still to supersonic (~83kph) is 1 reward
+        reward += self.touch_accel_w * (1 - height_factor) * norm(curr_vel - last_vel) / CAR_MAX_SPEED
+
+        return reward
+
+    def _boost_reward(self, player: PlayerData, player_last: PlayerData,
+                      car_height) -> float:
+        """
+            Encourage collecting and saving boost, sqrt to weight boost more the less it has
+            Penalized for not collecting boost while on the ground
+
+        Args:
+            player (PlayerData)
+            player_last (PlayerData)
+
+        Returns:
+            Float with respective reward
+        """
+        reward = 0
+        boost_diff = np.sqrt(player.boost_amount) - np.sqrt(player_last.boost_amount)
+
+        if boost_diff >= 0:
+            reward += self.boost_gain_w * boost_diff
+        elif car_height < GOAL_HEIGHT:
+            reward += self.boost_lose_w * boost_diff * (1 - car_height / GOAL_HEIGHT)
+        return reward
 
     def get_reward(self, player: PlayerData, state: GameState, previous_action: np.ndarray) -> float:
         rew = self.rewards[self.n]
         self.n += 1
         return float(rew)  # / 3.2  # Divide to get std of expected reward to ~1 at start, helps value net a little
+
+    def reset(self, initial_state: GameState):
+        """
+        Resets reward state
+
+        Args:
+            initial_state (GameState)
+        """
+        self.n = 0
+        self.last_state = None
+        self.rewards = None
+        self.current_state = initial_state
+        self.state_quality, self.player_qualities = self._state_qualities(initial_state)
