@@ -36,7 +36,11 @@ class ControlsPredictorDot(nn.Module):
         return torch.einsum("bad,bpd->bpa", act_emb, player_emb)
 
 
-class Necto(nn.Module):  # Wraps earl + an output and takes only a single input
+class Necto(nn.Module):
+    """
+    Wraps EARL (Extensible Attention-based Rocket League model) + an output and takes a single input
+    """
+
     def __init__(self, earl, output):
         super().__init__()
         self.earl = earl
@@ -67,17 +71,44 @@ class Necto(nn.Module):  # Wraps earl + an output and takes only a single input
 
 
 def get_critic():
+    """
+    Builds Critic of the A3C System responsible for estimating the action-value (Q value) or state-value (V value)
+
+    Notes:
+        Q value (a, s) -> specifies how good it is for an agent to
+            perform a particular action in a state with a policy π
+        V value (s) -> specifies how good it is for the agent to
+            be in a given state with a policy π
+    Returns:
+        NN Critic
+    """
     return Necto(EARLPerceiver(256, 4, 8, 1, query_features=36, key_value_features=25 + 30),
                  Linear(256, 1))
 
 
 def get_actor():
+    """
+    Builds Actor of the A3C System responsible for
+    updating the policy distribution in the direction suggested by the Critic.
+
+    Returns:
+        NN Actor
+    """
     split = (90,)
     return DiscretePolicy(Necto(EARLPerceiver(256, 4, 8, 1, query_features=36, key_value_features=25 + 30),
                                 ControlsPredictorDot(256)), split)
 
 
 def get_agent(actor_lr, critic_lr=None):
+    """
+    Builds Actor Critic Agent with both Actor and Critic NNs and the designed optimizer
+    Args:
+        actor_lr (float): actor learning rate
+        critic_lr (float): critic learning rate
+
+    Returns:
+        ActorCriticAgent instance
+    """
     actor = get_actor()
     critic = get_critic()
     optim = torch.optim.Adam([
